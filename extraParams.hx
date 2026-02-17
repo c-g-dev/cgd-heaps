@@ -1,0 +1,3 @@
+-lib format
+-lib hlsdl
+--macro hxd.res.ScopedRes.install()
