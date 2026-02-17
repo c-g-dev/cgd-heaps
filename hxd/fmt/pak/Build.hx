@@ -19,6 +19,7 @@ class Build {
 	public var pakDiff = false;
 	public var checkJPG = false;
 	public var checkOGG = false;
+	public var scopedManifest : String;
 
 	function new() {
 	}
@@ -27,6 +28,42 @@ class Build {
 		var ret = Sys.command(cmd, args);
 		if( ret != 0 )
 			throw cmd + " has failed with exit code " + ret;
+	}
+
+	function copyOptions( b : Build ) {
+		b.excludedExt = excludedExt.copy();
+		b.excludedNames = excludedNames.copy();
+		b.excludePath = excludePath.copy();
+		b.includePath = includePath.copy();
+		b.specialPath = specialPath.copy();
+		b.configuration = configuration;
+		b.align = align;
+		b.pakDiff = pakDiff;
+		b.checkJPG = checkJPG;
+		b.checkOGG = checkOGG;
+	}
+
+	function makeScopedPaks() {
+		if( scopedManifest == null )
+			return;
+		if( !sys.FileSystem.exists(scopedManifest) )
+			throw "Scoped manifest not found " + scopedManifest;
+		var data : Array<Dynamic> = haxe.Json.parse(sys.io.File.getContent(scopedManifest));
+		if( data == null || data.length == 0 )
+			throw "Scoped manifest is empty " + scopedManifest;
+		for( entry in data ) {
+			var key : String = Reflect.field(entry, "key");
+			var path : String = Reflect.field(entry, "path");
+			if( key == null || key == "" )
+				throw "Invalid scoped entry in manifest (missing key)";
+			if( path == null || path == "" )
+				throw "Invalid scoped entry in manifest (missing path)";
+			var b = new Build();
+			copyOptions(b);
+			b.resPath = path;
+			b.outPrefix = outPrefix + "." + key;
+			b.makePak();
+		}
 	}
 
 	function buildRec( path : String ) {
@@ -153,6 +190,10 @@ class Build {
 	public static dynamic function onInit( b : Build ) {}
 
 	function makePak() {
+		if( scopedManifest != null ) {
+			makeScopedPaks();
+			return;
+		}
 
 		if( !sys.FileSystem.exists(resPath) )
 			throw "'" + resPath + "' resource directory was not found";
@@ -260,6 +301,8 @@ class Build {
 				b.checkOGG = true;
 			case "-config" if( args.length > 0 ):
 				b.configuration = args.shift();
+			case "-scoped-manifest" if( args.length > 0 ):
+				b.scopedManifest = args.shift();
 			default:
 				throw "Unknown parameter " + f;
 			}

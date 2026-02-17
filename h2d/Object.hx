@@ -137,6 +137,21 @@ class Object #if (domkit && !domkit_heaps) implements domkit.Model<h2d.Object> #
 			parent.addChild(this);
 	}
 
+	public var updatesActive: Bool = true;
+
+	function onUpdate(dt:Float): Void {
+
+	}
+
+	function update(dt:Float): Void {
+		if(updatesActive) {
+			onUpdate(dt);
+			for(child in children) {
+				child.update(dt);
+			}
+		}
+	}
+
 	/**
 		Return the bounds of the object for its whole content, recursively.
 		@param relativeTo An optional object relative to coordinates of which bounds are returned.

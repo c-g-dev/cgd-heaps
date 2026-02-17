@@ -1,44 +1,15 @@
-# Heaps
-_High Performance Game Framework_
+# c-g-dev heaps.io fork
 
-[![Build Status](https://travis-ci.org/HeapsIO/heaps.svg?branch=master)](https://travis-ci.org/HeapsIO/heaps)
-[![](https://img.shields.io/discord/162395145352904705.svg?logo=discord)](https://discordapp.com/invite/sWCGm33)
+## Scoped Resource Loading
 
-[![Heaps.io logo](https://raw.githubusercontent.com/HeapsIO/heaps.io/master/assets/logo/logo-heaps-color.png)](http://heaps.io)
+One of the biggest issues with heaps.io is that you cannot easily import components that have their own local resources. I have already addressed this in my heaps-local-res repo, but that necessitates a change in resource access syntax.
 
-**Heaps** is a cross platform graphics engine designed for high performance games. It's designed to leverage modern GPUs that are commonly available on desktop, mobile and consoles.
+With this repo you can keep the same normal resource access syntax like:
 
-Heaps is currently working on:
-- HTML5 (requires WebGL)
-- Mobile (iOS, tvOS and Android)
-- Desktop with OpenGL (Win/Linux/OSX) or DirectX (Windows only)
-- Consoles (Nintendo Switch, Sony PS4, XBox One - requires being a registered developer)
-- Flash Stage3D
+```
+var img = hxd.Res.myImg.toTile();
+```
 
+BUT individual folders/packages can have their own /res folders. The /res folder that is used by a class is mapped to the lowest /res folder in its filetree path. 
 
-Community
----------
-
-Ask questions or discuss on <https://community.heaps.io>
-
-Chat on Discord <https://discord.gg/sWCGm33> or Gitter <https://gitter.im/heapsio/Lobby>
-
-Samples
--------
-
-In order to compile the samples, go to the `samples` directory and run `haxe gen.hxml`, this will generate a `build` directory containing project files for all samples.
-
-To compile:
-- For JS/WebGL: run `haxe [sample]_js.hxml`, then open `index.html` to run
-- For [HashLink](https://hashlink.haxe.org): run `haxe [sample]_hl.hxml` then run `hl <sample>.hl` to run (will use SDL, replace `-lib hlsdl` by `-lib hldx` in hxml to use DirectX)
-- For Flash: run `haxe [sample]_swf.hxml`, then open `<sample>.swf` to run
-- For Consoles, contact us: nicolas@haxe.org
-
-Project files for [Visual Studio Code](https://code.visualstudio.com/) are also generated.
-
-Get started!
-------------
-* [Installation](https://heaps.io/documentation/installation.html)
-* [Live samples with source code](https://heaps.io/samples/)
-* [Documentation](https://heaps.io/documentation/home.html)
-* [API documentation](https://heaps.io/api/)
+This requires a full overhaul of the internals of the heaps.io Resource system and cannot easily be ported to its own library. Thus a fork of heaps.io is necessary.

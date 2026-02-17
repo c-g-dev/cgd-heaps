@@ -799,6 +799,7 @@ class Scene extends Layers implements h3d.IDrawable implements hxd.SceneEvents.I
 	public dynamic function mark(name : String) {}
 
 	override function sync( ctx : RenderContext ) {
+		update(ctx.elapsedTime);
 		var forceCamSync = posChanged;
 		if( !allocated )
 			onAdd();

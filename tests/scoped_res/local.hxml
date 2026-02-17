@@ -1,0 +1,8 @@
+-cp .
+-cp tests/scoped_res/project/src
+-cp tests/scoped_res/project/pkgA/src
+-cp tests/scoped_res/project/pkgB/src
+-D resourcesPath=tests/scoped_res/project/res
+--macro hxd.res.ScopedRes.install()
+-main Main
+--interp

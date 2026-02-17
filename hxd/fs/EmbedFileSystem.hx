@@ -105,9 +105,11 @@ class EmbedFileSystem #if !macro implements FileSystem #end {
 	#if !macro
 
 	var root : Dynamic;
+	var namespace : String;
 
-	function new(root) {
+	function new(root, ?namespace:String) {
 		this.root = root;
+		this.namespace = namespace;
 	}
 
 	public function getRoot() : FileEntry {
@@ -115,8 +117,11 @@ class EmbedFileSystem #if !macro implements FileSystem #end {
 	}
 
 	static var invalidChars = ~/[^A-Za-z0-9_]/g;
-	static function resolve( path : String ) {
-		return "R_" + invalidChars.replace(path, "_");
+	static function resolve( path : String, ?namespace : String ) {
+		var name = "R_" + invalidChars.replace(path, "_");
+		if( namespace != null && namespace != "" )
+			name = "R_" + invalidChars.replace(namespace, "_") + "_" + invalidChars.replace(path, "_");
+		return name;
 	}
 
 	function splitPath( path : String ) {
@@ -153,7 +158,7 @@ class EmbedFileSystem #if !macro implements FileSystem #end {
 	public function get( path : String ) {
 		if( !exists(path) )
 			throw new NotFound(path);
-		var id = resolve(path);
+		var id = resolve(path, namespace);
 		return new EmbedEntry(this, path.split("/").pop(), path, id);
 	}
 
@@ -170,15 +175,15 @@ class EmbedFileSystem #if !macro implements FileSystem #end {
 	}
 	#end
 
-	public static macro function create( ?basePath : String, ?options : hxd.res.EmbedOptions ) {
+	public static macro function create( ?basePath : String, ?options : hxd.res.EmbedOptions, ?namespace : String ) {
 		var f = new hxd.res.FileTree(basePath);
-		var data = f.embed(options);
+		var data = f.embed(options, namespace);
 		var sdata = haxe.Serializer.run(makeTree(data.tree));
 		var types = {
 			expr : haxe.macro.Expr.ExprDef.EBlock([for( t in data.types ) haxe.macro.MacroStringTools.toFieldExpr(t.split("."))]),
 			pos : haxe.macro.Context.currentPos(),
 		};
-		return macro { $types; @:privateAccess new hxd.fs.EmbedFileSystem(haxe.Unserializer.run($v { sdata } )); };
+		return macro { $types; @:privateAccess new hxd.fs.EmbedFileSystem(haxe.Unserializer.run($v { sdata }), $v{namespace}); };
 	}
 
 	public function dispose() {

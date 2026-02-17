@@ -25,9 +25,11 @@ class FileTree {
 	var options : EmbedOptions;
 	var embedTypes : Array<String>;
 	var checkTmp : Bool;
+	var typeNamePrefix : String = "";
+	var embedNamespace : String;
 
-	public function new(dir) {
-		this.paths = resolvePaths(dir);
+	public function new(dir, ?resolvedPaths:Array<String>) {
+		this.paths = resolvedPaths == null ? resolvePaths(dir) : resolvedPaths.copy();
 		currentModule = Std.string(Context.getLocalClass());
 		pos = Context.currentPos();
 		defaultExt = { t : macro : hxd.res.Resource, e : macro hxd.res.Resource };
@@ -92,6 +94,8 @@ class FileTree {
 
 	function scanRec( tree : FileTreeData, basePath : String ) {
 		var dir = basePath + "/" + tree.relPath;
+		if( !sys.FileSystem.exists(dir) || !sys.FileSystem.isDirectory(dir) )
+			return;
 		Context.registerModuleDependency(currentModule, dir);
 		for( f in sys.FileSystem.readDirectory(dir) ) {
 			var path = dir + "/" + f;
@@ -137,11 +141,19 @@ class FileTree {
 		}
 	}
 
-	public function embed(options:EmbedOptions) {
+	public static function getEmbedResourceName( relPath : String, ?namespace : String ) {
+		var name = "R_" + invalidChars.replace(relPath, "_");
+		if( namespace != null && namespace != "" )
+			name = "R_" + invalidChars.replace(namespace, "_") + "_" + invalidChars.replace(relPath, "_");
+		return name;
+	}
+
+	public function embed(options:EmbedOptions, ?namespace:String) {
 		if( options == null ) options = { };
 		checkTmp = false;
 		this.options = options;
 		embedTypes = [];
+		embedNamespace = namespace;
 
 		var tree = scan();
 		for( path in paths ) {
@@ -158,7 +170,7 @@ class FileTree {
 			// try later with another fs
 			if( !StringTools.startsWith(file.fullPath, basePath) )
 				continue;
-			var name = "R_" + invalidChars.replace(file.relPath, "_");
+			var name = getEmbedResourceName(file.relPath, embedNamespace);
 			var f = try fs.get(file.relPath) catch( e : hxd.res.NotFound ) continue; // convert and filter
 			var fullPath = fs.getAbsolutePath(f);
 
@@ -174,6 +186,63 @@ class FileTree {
 
 		for( t in tree.dirs )
 			embedRec(t, basePath, fs);
+	}
+
+	function setupTypes() {
+		ignoredPairedExt = new Map();
+		for( e1 in Config.pairedExtensions.keys() ) {
+			for( e2 in Config.pairedExtensions.get(e1).split(",") ) {
+				var a = ignoredPairedExt.get(e2);
+				if( a == null ) {
+					a = [];
+					ignoredPairedExt.set(e2, a);
+				}
+				a.push(e1);
+			}
+		}
+
+		extensions = new Map();
+		for( e in Config.extensions.keys() ) {
+			var t = Config.extensions.get(e).split(".");
+			var expr = { expr : EConst(CIdent(t[0])), pos : pos };
+			for( i in 1...t.length )
+				expr = { expr : EField(expr, t[i]), pos : pos };
+			var ct : ComplexType = TPath({ pack : t, name : t.pop() });
+			for( e in e.split(",") )
+				extensions.set(e, { t : ct, e : expr });
+		}
+	}
+
+	public function setTypeNamePrefix( prefix : String ) {
+		typeNamePrefix = prefix == null ? "" : prefix;
+	}
+
+	public function buildScopeFields( scopeId : String ) {
+		loaderType = macro : hxd.res.Loader;
+		setupTypes();
+		var fields = [];
+		var dict = new Map();
+		dict.set("loader", "reserved identifier");
+		fields.push({
+			name : "loader",
+			access : [APublic, AStatic],
+			kind : FProp("get","never",loaderType),
+			pos : pos,
+		});
+		fields.push({
+			name : "get_loader",
+			access : [AStatic],
+			kind : FFun({
+				args : [],
+				ret : loaderType,
+				expr : macro {
+					return hxd.res.ScopedLoaders.get($v{scopeId});
+				}
+			}),
+			pos : pos
+		});
+		buildFieldsRec(scan(), fields, dict);
+		return fields;
 	}
 
 
@@ -227,28 +296,7 @@ class FileTree {
 			});
 		}
 
-		ignoredPairedExt = new Map();
-		for( e1 in Config.pairedExtensions.keys() ) {
-			for( e2 in Config.pairedExtensions.get(e1).split(",") ) {
-				var a = ignoredPairedExt.get(e2);
-				if( a == null ) {
-					a = [];
-					ignoredPairedExt.set(e2, a);
-				}
-				a.push(e1);
-			}
-		}
-
-		extensions = new Map();
-		for( e in Config.extensions.keys() ) {
-			var t = Config.extensions.get(e).split(".");
-			var expr = { expr : EConst(CIdent(t[0])), pos : pos };
-			for( i in 1...t.length )
-				expr = { expr : EField(expr, t[i]), pos : pos };
-			var ct : ComplexType = TPath({ pack : t, name : t.pop() });
-			for( e in e.split(",") )
-				extensions.set(e, { t : ct, e : expr });
-		}
+		setupTypes();
 
 		buildFieldsRec(scan(), fields, dict);
 		return fields;
@@ -337,7 +385,7 @@ class FileTree {
 		dict.set("loader", "reserved identifier");
 		buildFieldsRec(d, ofields, dict);
 
-		var name = makeIdent(d.relPath);
+		var name = typeNamePrefix + makeIdent(d.relPath);
 		name = "_" + name.charAt(0).toUpperCase() + name.substr(1);
 		for( f in ofields )
 			f.access.remove(AStatic);
