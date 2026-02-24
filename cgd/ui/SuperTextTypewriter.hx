@@ -67,6 +67,7 @@ class SuperTextTypewriter {
     var baseY:Float = 0.;
     var deallocateChars:Int = 0;
     var wordWrapLookaheadEnd:Int = -1;
+    var charSpeedMap:Array<Float> = [];
 
     public function new(
         target:SuperText,
@@ -116,6 +117,7 @@ class SuperTextTypewriter {
         paragraphCursor = 0;
         totalVisibleChars = visibleLengthForHtml(sourceHtml);
         sourceVisibleText = extractVisibleText(sourceHtml);
+        charSpeedMap = buildCharSpeedMap(sourceHtml);
         pageHtml = sourceHtml;
         wordWrapLookaheadEnd = -1;
         renderedHtml = "<p></p>";
@@ -221,7 +223,8 @@ class SuperTextTypewriter {
     }
 
     function writeBySpeed(dt:Float):Void {
-        carry += speed * dt;
+        var charSpeed = getCharSpeed(progress);
+        carry += charSpeed * dt;
         var steps = Std.int(carry);
         if( steps <= 0 ) return;
         carry -= steps;
@@ -605,6 +608,57 @@ class SuperTextTypewriter {
             i--;
         }
         return pos;
+    }
+    `
+    function getCharSpeed(charIndex:Int):Float {
+        if( charIndex >= 0 && charIndex < charSpeedMap.length ) {
+            var mapped = charSpeedMap[charIndex];
+            if( mapped > 0 ) return mapped;
+        }
+        return speed;
+    }
+
+    function buildCharSpeedMap(html:String):Array<Float> {
+        var normalized = html == null || StringTools.trim(html) == "" ? "<p></p>" : html;
+        var doc = @:privateAccess target.parseText(normalized);
+        var map:Array<Float> = [];
+        var speedStack:Array<Float> = [];
+        buildCharSpeedMapFromNode(doc, map, speedStack);
+        return map;
+    }
+
+    function buildCharSpeedMapFromNode(node:Xml, map:Array<Float>, speedStack:Array<Float>):Void {
+        switch( node.nodeType ) {
+        case Document:
+            for( child in node )
+                buildCharSpeedMapFromNode(child, map, speedStack);
+        case Element:
+            var pushedSpeed = false;
+            var nodeName = node.nodeName.toLowerCase();
+            if( nodeName == "speed" ) {
+                var val = node.get("val");
+                if( val != null ) {
+                    speedStack.push(Std.parseFloat(val));
+                    pushedSpeed = true;
+                }
+            }
+            if( !pushedSpeed && node.exists("speed") ) {
+                speedStack.push(Std.parseFloat(node.get("speed")));
+                pushedSpeed = true;
+            }
+            for( child in node )
+                buildCharSpeedMapFromNode(child, map, speedStack);
+            if( pushedSpeed )
+                speedStack.pop();
+        case PCData, CData:
+            if( node.nodeValue != null && node.nodeValue != "" ) {
+                var text = @:privateAccess target.htmlToText(node.nodeValue);
+                var currentSpeed = speedStack.length > 0 ? speedStack[speedStack.length - 1] : 0.;
+                for( _ in 0...text.length )
+                    map.push(currentSpeed);
+            }
+        default:
+        }
     }
 
 }

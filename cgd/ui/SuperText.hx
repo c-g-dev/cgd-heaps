@@ -528,12 +528,27 @@ class SuperText extends HtmlText {
 	function validateEffectNodes(xml:Xml) : Void {
 		switch( xml.nodeType ) {
 		case Element:
-			if( xml.nodeName.toLowerCase() == "effect" ) {
+			var nodeName = xml.nodeName.toLowerCase();
+			if( nodeName == "effect" ) {
 				var effectName = xml.get("name");
 				if( effectName == null || effectName == "" )
 					throw 'SuperText <effect> tag requires a non-empty "name" attribute.';
 				if( resolveRegisteredEffect(effectName) == null )
 					throw 'SuperText effect "${effectName}" is not registered.';
+			}
+			if( nodeName == "speed" ) {
+				var val = xml.get("val");
+				if( val == null || val == "" )
+					throw 'SuperText <speed> tag requires a non-empty "val" attribute.';
+				var parsed = Std.parseFloat(val);
+				if( Math.isNaN(parsed) || parsed <= 0 )
+					throw 'SuperText <speed> tag "val" must be a positive number, got "${val}".';
+			}
+			if( xml.exists("speed") ) {
+				var val = xml.get("speed");
+				var parsed = Std.parseFloat(val);
+				if( Math.isNaN(parsed) || parsed <= 0 )
+					throw 'SuperText "speed" attribute must be a positive number, got "${val}".';
 			}
 			for( child in xml )
 				validateEffectNodes(child);
