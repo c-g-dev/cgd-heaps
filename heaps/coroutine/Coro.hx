@@ -1,23 +1,23 @@
-package cgd.coro;
+package heaps.coroutine;
 
-import cgd.coro.ds.MaybeReturn;
-import cgd.coro.Coroutine.CoroutineContext;
-import cgd.coro.CoroutineSystem;
-import cgd.coro.Coroutine.CoroutineFunction;
-import cgd.coro.ext.CoroutineExtensions;
-import cgd.coro.Coroutine.FrameYield;
+import heaps.coroutine.ds.MaybeReturn;
+import heaps.coroutine.Coroutine.CoroutineContext;
+import heaps.coroutine.CoroutineSystem;
+import heaps.coroutine.Coroutine.CoroutineFunction;
+import heaps.coroutine.ext.CoroutineExtensions;
+import heaps.coroutine.Coroutine.FrameYield;
 
 
 import haxe.macro.Expr;
 import haxe.macro.Context;
 
-import cgd.coro.Coroutine;
+import heaps.coroutine.Coroutine;
 import haxe.macro.Expr.ExprOf;
 
 
 
-@:access(cgd.coro.CoroutineSystem)
-@:access(cgd.coro.CoroutineContext)
+@:access(heaps.coroutine.CoroutineSystem)
+@:access(heaps.coroutine.CoroutineContext)
 class Coro {
     public static function start(coroutine: CoroutineFunction):Coroutine {
         var coro = new Coroutine(coroutine);
@@ -41,11 +41,11 @@ class Coro {
 
     public static macro function yield(callingExpr:ExprOf<FrameYield>):Expr {
         return macro {
-            if(!cgd.coro.Coroutine.CoroUtils.hasNextOnce()){
-                return cgd.coro.Coro.once(() -> return $callingExpr);
+            if(!heaps.coroutine.Coroutine.CoroUtils.hasNextOnce()){
+                return heaps.coroutine.Coro.once(() -> return $callingExpr);
             }
             else {
-                cgd.coro.Coroutine.CoroUtils.incrementOnce();
+                heaps.coroutine.Coroutine.CoroUtils.incrementOnce();
             }
         }
     }
@@ -57,7 +57,7 @@ class Coro {
     public static macro function step(block:Expr):Expr {
         switch (block.expr) {
             case EBlock(_):
-                return macro cgd.coro.Coro.start((_) -> $block);
+                return macro heaps.coroutine.Coro.start((_) -> $block);
             case _:
                 Context.error("Coro.step expects a block expression: Coro.step({ ... })", block.pos);
         }
@@ -88,24 +88,24 @@ class Coro {
 
 	    			var dataObj:Expr = { expr: EObjectDecl(dataObjectFields), pos: pos };
 
-	    			return macro cgd.coro.Coro.start((ctx) -> {
-	    				var __obj = cgd.coro.Coro.once(() -> return $object);
-	    				var __duration:Float = cgd.coro.Coro.once(() -> return $duration);
-	    				var __tw = cgd.coro.Coro.once(() -> return $dataObj);
+	    			return macro heaps.coroutine.Coro.start((ctx) -> {
+	    				var __obj = heaps.coroutine.Coro.once(() -> return $object);
+	    				var __duration:Float = heaps.coroutine.Coro.once(() -> return $duration);
+	    				var __tw = heaps.coroutine.Coro.once(() -> return $dataObj);
 
 	    				if (__duration <= 0) {
 	    					${{ expr: EBlock(assignFinal), pos: pos }}
-	    					return cgd.coro.Coroutine.FrameYield.Stop;
+	    					return heaps.coroutine.Coroutine.FrameYield.Stop;
 	    				}
 
 	    				var __t:Float = (haxe.Timer.stamp() - __tw.startTime) / __duration;
 	    				if (__t >= 1) {
 	    					${{ expr: EBlock(assignFinal), pos: pos }}
-	    					return cgd.coro.Coroutine.FrameYield.Stop;
+	    					return heaps.coroutine.Coroutine.FrameYield.Stop;
 	    				}
 
 	    				${{ expr: EBlock(assignRunning), pos: pos }}
-	    				return cgd.coro.Coroutine.FrameYield.WaitNextFrame;
+	    				return heaps.coroutine.Coroutine.FrameYield.WaitNextFrame;
 	    			});
 	    		case _:
 	    			Context.error("Coro.tween expects an object literal for fields, e.g., {x: 10, y: 20}", pos);

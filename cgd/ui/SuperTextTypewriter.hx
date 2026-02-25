@@ -1,6 +1,6 @@
 package cgd.ui;
 
-import cgd.coro.Future;
+import heaps.coroutine.Future;
 
 enum SuperTextTypewriterParagraphBreak {
     WaitForAdvance;
@@ -609,7 +609,7 @@ class SuperTextTypewriter {
         }
         return pos;
     }
-    `
+    
     function getCharSpeed(charIndex:Int):Float {
         if( charIndex >= 0 && charIndex < charSpeedMap.length ) {
             var mapped = charSpeedMap[charIndex];

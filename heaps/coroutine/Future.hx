@@ -1,6 +1,6 @@
-package cgd.coro;
+package heaps.coroutine;
 
-@:using(cgd.coro.macros.FutureMacroExtensions)
+@:using(heaps.coroutine.macros.FutureMacroExtensions)
 class Future<T = Dynamic> {
 	public var isComplete(default, null):Bool;
 

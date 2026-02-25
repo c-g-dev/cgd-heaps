@@ -1,10 +1,10 @@
-package cgd.coro.macros;
+package heaps.coroutine.macros;
 
 import haxe.macro.Expr;
 import haxe.macro.Context;
-import cgd.coro.Coroutine.CoroutineContext;
+import heaps.coroutine.Coroutine.CoroutineContext;
 
-import cgd.coro.Coroutine;
+import heaps.coroutine.Coroutine;
 import haxe.macro.Expr.ExprOf;
 
 
@@ -18,21 +18,21 @@ class CoroutineMacroExtensions {
 
 		if (!valueNeeded) {
 			return macro {
-				var __coro = cgd.coro.Coro.once(() -> { return $callingExpr;});
-				cgd.coro.ext.CoroutineExtensions.start(__coro);
-				if (!cgd.coro.Coroutine.CoroUtils.isComplete(__coro))
-					return cgd.coro.Coroutine.FrameYield.Suspend(cgd.coro.Coroutine.CoroUtils.getFuture(__coro));
+				var __coro = heaps.coroutine.Coro.once(() -> { return $callingExpr;});
+				heaps.coroutine.ext.CoroutineExtensions.start(__coro);
+				if (!heaps.coroutine.Coroutine.CoroUtils.isComplete(__coro))
+					return heaps.coroutine.Coroutine.FrameYield.Suspend(heaps.coroutine.Coroutine.CoroUtils.getFuture(__coro));
 			};
 		} else {
 			return macro {
-				var __coro = cgd.coro.Coro.once(() -> return $callingExpr);
-				cgd.coro.ext.CoroutineExtensions.start(__coro);
+				var __coro = heaps.coroutine.Coro.once(() -> return $callingExpr);
+				heaps.coroutine.ext.CoroutineExtensions.start(__coro);
 				var __awaitResult:Dynamic = null;
 
-				if (!cgd.coro.Coroutine.CoroUtils.isComplete(__coro)) {
-					return cgd.coro.Coroutine.FrameYield.Suspend(cgd.coro.Coroutine.CoroUtils.getFuture(__coro));
+				if (!heaps.coroutine.Coroutine.CoroUtils.isComplete(__coro)) {
+					return heaps.coroutine.Coroutine.FrameYield.Suspend(heaps.coroutine.Coroutine.CoroUtils.getFuture(__coro));
 				} else {
-					__awaitResult = cgd.coro.Coroutine.CoroUtils.getResult(__coro);
+					__awaitResult = heaps.coroutine.Coroutine.CoroUtils.getResult(__coro);
 				}
 
 				__awaitResult;

@@ -1,7 +1,7 @@
-package cgd.coro;
+package heaps.coroutine;
 
 import ludi.commons.UUID;
-import cgd.coro.Future;
+import heaps.coroutine.Future;
 
 class Task<T = Dynamic> {
 	private var uuid: String = UUID.generate();

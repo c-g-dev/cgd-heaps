@@ -1,17 +1,17 @@
-package cgd.coro;
+package heaps.coroutine;
 
 import ludi.commons.collections.Set;
-import cgd.coro.ext.CoroutineExtensions;
+import heaps.coroutine.ext.CoroutineExtensions;
 import haxe.extern.EitherType;
 import haxe.ds.Either;
-import cgd.coro.ds.MaybeReturn;
+import heaps.coroutine.ds.MaybeReturn;
 import ludi.commons.collections.Stack;
 import hxd.Timer;
 import hxd.System;
 
 import Map;
-import cgd.coro.CoroutineSystem;
-import cgd.coro.Future;
+import heaps.coroutine.CoroutineSystem;
+import heaps.coroutine.Future;
 
 
 typedef CoroutineBaseFunction<T = Dynamic> = (ctx:CoroutineContext<T>) -> FrameYield<T>;
@@ -57,9 +57,9 @@ abstract CoroutineFunction<T = Dynamic>(CoroutineBaseFunction<T>) from Coroutine
 	}
 }
 
-@:using(cgd.coro.ext.CoroutineExtensions)
-@:using(cgd.coro.macros.CoroutineMacroExtensions)
-@:access(cgd.coro.CoroutineContext)
+@:using(heaps.coroutine.ext.CoroutineExtensions)
+@:using(heaps.coroutine.macros.CoroutineMacroExtensions)
+@:access(heaps.coroutine.CoroutineContext)
 abstract Coroutine<T = Dynamic>(CoroutineContext<T>) {
 	public function new(coro:EitherType<CoroutineFunction<T>, CoroutineContext<T>>) {
 		if (coro is CoroutineContext) {
@@ -73,8 +73,8 @@ abstract Coroutine<T = Dynamic>(CoroutineContext<T>) {
 		return this;
 }
 
-@:using(cgd.coro.macros.CoroutineMacroExtensions)
-@:access(cgd.coro.CoroutineSystem)
+@:using(heaps.coroutine.macros.CoroutineMacroExtensions)
+@:access(heaps.coroutine.CoroutineSystem)
 class CoroutineContext<T = Dynamic> {
 	public var uuid(default, null):String;
 
@@ -204,7 +204,7 @@ class CoroutineContext<T = Dynamic> {
 	}
 }
 
-@:using(cgd.coro.macros.FrameYieldMacroExtensions)
+@:using(heaps.coroutine.macros.FrameYieldMacroExtensions)
 enum FrameYield<T = Dynamic> {
 	WaitNextFrame;
 	WaitFrames(f:Int);
@@ -220,8 +220,8 @@ enum abstract CoroutinePriority(Int) from Int to Int {
 	var Rendering = 2;
 }
 
-@:access(cgd.coro.CoroutineSystem)
-@:access(cgd.coro.CoroutineContext)
+@:access(heaps.coroutine.CoroutineSystem)
+@:access(heaps.coroutine.CoroutineContext)
 class CoroUtils {
 	public static function isComplete(coro:Coroutine):Bool {
 		return coro.context().isComplete;

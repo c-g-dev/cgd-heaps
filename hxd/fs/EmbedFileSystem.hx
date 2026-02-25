@@ -168,8 +168,10 @@ class EmbedFileSystem #if !macro implements FileSystem #end {
 	static function makeTree( t : hxd.res.FileTree.FileTreeData ) : Dynamic {
 		var o = {};
 		for( d in t.dirs )
+			trace("adding resource dir: " + d);
 			Reflect.setField(o, d.name, makeTree(d));
 		for( f in t.files )
+			trace("adding resource file: " + f);
 			Reflect.setField(o, f.file, true);
 		return o;
 	}

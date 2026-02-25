@@ -1,4 +1,4 @@
-package cgd.coro.ds;
+package heaps.coroutine.ds;
 
 abstract MaybeReturn<T>(Void->T) to Void->T from Void->T {
 	public inline function new(callback:Void->T) {
