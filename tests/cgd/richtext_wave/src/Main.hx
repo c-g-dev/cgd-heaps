@@ -30,6 +30,8 @@ class Main extends App {
 		lib.registerFont("default", font);
 		lib.registerFont("vl-gothic", hxd.Res.VL_Gothic_Regular.toFont());
 
+		lib.registerImage("heart", hxd.Res.emoji_u2764.toTile());
+
 		lib.registerEffect("wave", function(target) {
 			var amp = Std.parseFloat(target.getAttribute("amp", "6"));
 			var speed = Std.parseFloat(target.getAttribute("speed", "6"));
@@ -77,7 +79,7 @@ class Main extends App {
 		//st.scale(4);
 		st.fontName = "vl-gothic";
 		st.maxWidth = 340;
-		st.text = '<p>Effects demo: <effect name="wave" amp="8" speed="5.5" phase="0.55">WAVE</effect>, <effect name="rainbow" speed="1.8" phase="0.6">RAINBOW</effect>, and <effect name="pulse" speed="2.5" amount="0.05">PULSE</effect> in <speed val="1">paragraph</speed> one. Test test test test test test test test test test.</p><p>Paragraph two keeps writing after deallocating lines.</p><p>Paragraph three validates finish flow.</p>';
+		st.text = '<p>Effects demo: ' + st.img("heart") + st.img("heart") + st.img("heart") + ' <effect name="wave" amp="8" speed="5.5" phase="0.55">WAVE</effect>, <effect name="rainbow" speed="1.8" phase="0.6">RAINBOW</effect>, and <effect name="pulse" speed="2.5" amount="0.05">PULSE</effect> in <speed val="1">paragraph</speed> one. Test test test test test test test test test test.</p><p>Paragraph two keeps writing after deallocating lines.</p><p>Paragraph three validates finish flow.</p>';
 		typewriter = st.createTypewriter(
 			44,
 			3,
@@ -92,11 +94,11 @@ class Main extends App {
 
 	function typewriterController(state:SuperTextTypewriterOnFrameState):SuperTextTypewriterRequest {
 		return switch( state ) {
-		case Writing:{ return Wait; }
-		case AllLinesAllocated:{ if(Key.isDown(Key.SPACE)) return Advance; else return Wait; }
-		case DeallocatingLines:{ return Wait; }
-		case ParagraphBreak:{ return if(Key.isDown(Key.SPACE)) Advance; else Wait; }
-		case NoMoreParagraphs:{ return Finish; }
+			case Writing:{ if(Key.isDown(Key.SPACE)) return AutoFill; else return Wait; }
+			case AllLinesAllocated:{ if(Key.isDown(Key.SPACE)) return Advance; else return Wait; }
+			case DeallocatingLines:{ return Wait; }
+			case ParagraphBreak:{ return if(Key.isDown(Key.SPACE)) Advance; else Wait; }
+			case NoMoreParagraphs:{ return Finish; }
 		}
 	}
 

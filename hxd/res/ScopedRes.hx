@@ -71,13 +71,21 @@ class ScopedRes {
 		return p.substr(0, idx);
 	}
 
+	static function isInternalHeapsResPath( path : String ) {
+		var p = normalizePath(path);
+		if( !StringTools.endsWith(p, "/hxd/res") )
+			return false;
+		// Ignore Heaps internal source folder if it gets discovered while scanning classpaths.
+		return sys.FileSystem.exists(p + "/Loader.hx") && sys.FileSystem.exists(p + "/Resource.hx");
+	}
+
 	static function getDefaultPaths() {
 		if( defaultPaths != null )
 			return defaultPaths.copy();
 		defaultPaths = [];
 		for( p in FileTree.resolvePaths() ) {
 			var n = normalizePath(p);
-			if( sys.FileSystem.exists(n) && sys.FileSystem.isDirectory(n) )
+			if( sys.FileSystem.exists(n) && sys.FileSystem.isDirectory(n) && !isInternalHeapsResPath(n) )
 				defaultPaths.push(n);
 		}
 		return defaultPaths.copy();
@@ -88,7 +96,7 @@ class ScopedRes {
 		var current = normalizePath(new haxe.io.Path(ensureAbsolute(file)).dir);
 		while( true ) {
 			var res = normalizePath(current + "/res");
-			if( sys.FileSystem.exists(res) && sys.FileSystem.isDirectory(res) )
+			if( sys.FileSystem.exists(res) && sys.FileSystem.isDirectory(res) && !isInternalHeapsResPath(res) )
 				roots.push(res);
 			var parent = parentDir(current);
 			if( parent == current )
@@ -167,6 +175,7 @@ class ScopedRes {
 
 	static function ensureScope( paths : Array<String>, defineType = true ) {
 		var normalized = [for( p in paths ) normalizePath(p)];
+		normalized = [for( p in normalized ) if( !isInternalHeapsResPath(p) ) p];
 		if( normalized.length == 0 )
 			normalized = getDefaultPaths();
 		if( normalized.length == 0 )

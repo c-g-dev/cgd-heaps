@@ -256,7 +256,7 @@ class SuperText extends HtmlText {
 	}
 
 	
-	#if cgdheaps override #end public function onUpdate(dt:Float):Void {
+	#if !heaps override #end public function onUpdate(dt:Float):Void {
 		var currentTypewriters = [for( typewriter in activeTypewriters ) typewriter];
 		for( typewriter in currentTypewriters )
 			typewriter.__onFrame(dt);
@@ -267,7 +267,7 @@ class SuperText extends HtmlText {
 		}
 	}
 
-	#if !cgdheaps
+	#if heaps
 	override function sync(ctx:RenderContext):Void {
 		super.sync(ctx);
 		onUpdate(ctx.elapsedTime);
@@ -623,6 +623,12 @@ class SuperText extends HtmlText {
 		var resolved = fonts.get(name);
 		if( resolved == null ) throw 'SuperText font "${name}" is not registered.';
 		return resolved;
+	}
+
+	public static function __init__() {
+		for(font in GlobalFonts.all()) {
+			SuperText.configurable.registerFont(font, font.toFont());
+		}
 	}
 
 }
