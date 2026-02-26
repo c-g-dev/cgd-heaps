@@ -81,6 +81,12 @@ class Object #if (domkit && !domkit_heaps) implements domkit.Model<h2d.Object> #
 	public var alpha : Float = 1.;
 
 	/**
+		Enable or disable debug bounds rendering for this object.
+		When enabled, draws an outline at the top of the Scene around `Object.getBounds`.
+	**/
+	public var debugBox(get, set) : Bool;
+
+	/**
 		The post process filter for this object.
 
 		When set, `Object.alpha` value affects both filter and object transparency (use `Drawable.color.a` to set transparency only for the object).
@@ -124,6 +130,8 @@ class Object #if (domkit && !domkit_heaps) implements domkit.Model<h2d.Object> #
 	@:dox(show)
 	var allocated : Bool;
 	var lastFrame : Int;
+	var _debugBox : Bool = false;
+	var debugBoxOverlay : DebugBoxOverlay;
 
 	/**
 		Create a new empty object.
@@ -476,6 +484,7 @@ class Object #if (domkit && !domkit_heaps) implements domkit.Model<h2d.Object> #
 	function onHierarchyMoved( parentChanged : Bool ) {
 		for ( c in children )
 			c.onHierarchyMoved(parentChanged);
+		if ( _debugBox && debugBoxOverlay != null ) debugBoxOverlay.updateAttachment();
 	}
 
 	/**
@@ -490,6 +499,7 @@ class Object #if (domkit && !domkit_heaps) implements domkit.Model<h2d.Object> #
 			filter.bind(this);
 		for( c in children )
 			c.onAdd();
+		if ( _debugBox && debugBoxOverlay != null ) debugBoxOverlay.updateAttachment();
 	}
 
 
@@ -500,6 +510,7 @@ class Object #if (domkit && !domkit_heaps) implements domkit.Model<h2d.Object> #
 	**/
 	@:dox(show)
 	function onRemove() {
+		if ( debugBoxOverlay != null ) debugBoxOverlay.remove();
 		allocated = false;
 		if( filter != null )
 			filter.unbind(this);
@@ -1031,6 +1042,24 @@ class Object #if (domkit && !domkit_heaps) implements domkit.Model<h2d.Object> #
 		return rotation = v;
 	}
 
+	inline function get_debugBox() {
+		return _debugBox;
+	}
+
+	function set_debugBox(v:Bool) {
+		if ( _debugBox == v )
+			return v;
+		_debugBox = v;
+		if ( v ) {
+			if ( debugBoxOverlay == null )
+				debugBoxOverlay = new DebugBoxOverlay(this);
+			debugBoxOverlay.updateAttachment();
+		} else if ( debugBoxOverlay != null ) {
+			debugBoxOverlay.remove();
+		}
+		return v;
+	}
+
 	/**
 		Move the object by the specified amount along its current direction (`Object.rotation` angle).
 	**/
@@ -1143,4 +1172,3 @@ class Object #if (domkit && !domkit_heaps) implements domkit.Model<h2d.Object> #
 	}
 
 }
-

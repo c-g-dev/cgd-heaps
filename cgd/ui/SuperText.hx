@@ -629,6 +629,13 @@ class SuperText extends HtmlText {
 		for(font in GlobalFonts.all()) {
 			SuperText.configurable.registerFont(font, font.toFont());
 		}
+		for(icon in GlobalIcons.all()) {
+			SuperText.configurable.registerImage(icon, icon.toTile());
+		}
+
+		SuperText.configurable.registerEffect("wave", SuperTextEffects.wave);
+		SuperText.configurable.registerEffect("rainbow", SuperTextEffects.rainbow);
+		SuperText.configurable.registerEffect("pulse", SuperTextEffects.pulse);
 	}
 
 }

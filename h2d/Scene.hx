@@ -937,5 +937,39 @@ class Scene extends Layers implements h3d.IDrawable implements hxd.SceneEvents.I
 		return new Bitmap(target);
 	}
 
+	/**
+		Return a textual XML-like representation of the Scene graph.
+	**/
+	public function printDOM() : String {
+		var out = new StringBuf();
+		function appendIndent(level:Int) {
+			for ( _ in 0...level ) out.add("  ");
+		}
+		function appendNode(obj:Object, level:Int) {
+			var cls = Type.getClassName(Type.getClass(obj));
+			if ( cls == null ) cls = "Object";
+			appendIndent(level);
+			if ( obj.numChildren == 0 ) {
+				out.add("<");
+				out.add(cls);
+				out.add("/>");
+				return;
+			}
+			out.add("<");
+			out.add(cls);
+			out.add(">\n");
+			for ( i in 0...obj.numChildren ) {
+				appendNode(obj.getChildAt(i), level + 1);
+				out.add("\n");
+			}
+			appendIndent(level);
+			out.add("</");
+			out.add(cls);
+			out.add(">");
+		}
+		appendNode(this, 0);
+		return out.toString();
+	}
+
 
 }
