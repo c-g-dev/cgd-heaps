@@ -244,7 +244,7 @@ class ScopedRes {
 			return;
 		visited.set(abs, true);
 		for( f in sys.FileSystem.readDirectory(abs) ) {
-			if( f == ".git" || f == ".svn" )
+			if( f == ".git" || f == ".svn" || f == "test" || f == "tests" )
 				continue;
 			var full = normalizePath(abs + "/" + f);
 			if( sys.FileSystem.isDirectory(full) )
