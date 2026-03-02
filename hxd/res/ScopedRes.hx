@@ -39,7 +39,65 @@ class ScopedRes {
 		if( setupDone )
 			return;
 		setupDone = true;
-		Compiler.addGlobalMetadata("", "@:build(hxd.res.ScopedRes.rewriteType())", true, true, false);
+		var targets = discoverMetadataModules();
+		for( mod in targets ) {
+			//trace("Adding global metadata for " + mod);
+			Compiler.addGlobalMetadata(mod, "@:build(hxd.res.ScopedRes.rewriteType())", false, true, false);
+		}
+	}
+
+	static function isValidIdent( s : String ) {
+		if( s == null || s == "" )
+			return false;
+		return ~/^[A-Za-z_][A-Za-z0-9_]*$/.match(s);
+	}
+
+	static function discoverMetadataModules() {
+		var moduleMap = new Map<String,Bool>();
+		var stdRoot = normalizePath(parentDir(Context.resolvePath("StdTypes.hx"))).toLowerCase();
+		for( cp in Context.getClassPath() ) {
+			var abs = ensureAbsolute(cp);
+			if( abs == null || abs == "" )
+				continue;
+			var normalized = normalizePath(abs);
+			var normalizedLower = normalized.toLowerCase();
+			if( normalizedLower == stdRoot || StringTools.startsWith(normalizedLower, stdRoot + "/") )
+				continue;
+			if( !sys.FileSystem.exists(normalized) || !sys.FileSystem.isDirectory(normalized) )
+				continue;
+			var stack = [normalized];
+			while( stack.length > 0 ) {
+				var dir = stack.pop();
+				for( entry in sys.FileSystem.readDirectory(dir) ) {
+					if( entry == ".git" || entry == ".svn" || entry == ".hg" )
+						continue;
+					var full = normalizePath(dir + "/" + entry);
+					if( sys.FileSystem.isDirectory(full) ) {
+						if( StringTools.startsWith(entry, ".") )
+							continue;
+						stack.push(full);
+						continue;
+					}
+					if( !StringTools.endsWith(entry, ".hx") )
+						continue;
+					var rel = full.substr(normalized.length + 1);
+					var module = rel.substr(0, rel.length - 3).split("/").join(".");
+					var parts = module.split(".");
+					var valid = true;
+					for( part in parts ) {
+						if( !isValidIdent(part) || StringTools.startsWith(part, "_") ) {
+							valid = false;
+							break;
+						}
+					}
+					if( valid )
+						moduleMap.set(module, true);
+				}
+			}
+		}
+		var modules = [for( k in moduleMap.keys() ) k];
+		modules.sort(function( a, b ) return Reflect.compare(a, b));
+		return modules;
 	}
 
 	static function normalizePath( path : String ) {
