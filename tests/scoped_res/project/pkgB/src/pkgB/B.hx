@@ -10,4 +10,8 @@ class B {
 		return hxd.Res.dup.entry.getText();
 	}
 
+	public static function dupViaLoader() {
+		return hxd.Res.loader.loadScoped("dup.txt").entry.getText();
+	}
+
 }

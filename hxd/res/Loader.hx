@@ -36,6 +36,10 @@ class Loader {
 		return new Any(this, fs.get(path));
 	}
 
+	public inline function loadScoped( path : String ) : Any {
+		return load(path);
+	}
+
 	public function loadCache<T:hxd.res.Resource>( path : String, c : Class<T> ) : T {
 		return hxd.fs.Exclusive.lock(function() {
 			var res : T = cache.get(path);

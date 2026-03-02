@@ -13,8 +13,10 @@ class Main extends hxd.App {
 		expect("pkgA.value", clean(pkgA.A.value()), "pkgA_value");
 		expect("pkgA.shared", clean(pkgA.A.shared()), "root_shared");
 		expect("pkgA.dup", clean(pkgA.A.dup()), "pkgA_dup");
+		expect("pkgA.dupViaLoader", clean(pkgA.A.dupViaLoader()), "pkgA_dup");
 		expect("pkgB.shared", clean(pkgB.B.shared()), "root_shared");
 		expect("pkgB.dup", clean(pkgB.B.dup()), "root_dup");
+		expect("pkgB.dupViaLoader", clean(pkgB.B.dupViaLoader()), "root_dup");
 
 		trace("ok");
 

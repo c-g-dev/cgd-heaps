@@ -309,6 +309,15 @@ class ScopedRes {
 		}
 	}
 
+	static function isHxdResLoaderExpr( e : Expr ) {
+		return switch( e.expr ) {
+		case EField(base, "loader"):
+			isHxdResExpr(base);
+		default:
+			false;
+		}
+	}
+
 	static function typePathExpr( tp : TypePath, pos : Position ) {
 		var e : Expr = { expr : EConst(CIdent(tp.pack[0])), pos : pos };
 		for( i in 1...tp.pack.length )
@@ -334,6 +343,13 @@ class ScopedRes {
 	static function rewriteExpr( e : Expr, scope : ScopeInfo ) : Expr {
 		var mapped = ExprTools.map(e, function( sub ) return rewriteExpr(sub, scope));
 		return switch( mapped.expr ) {
+		case ECall(callTarget, args):
+			switch( callTarget.expr ) {
+			case EField(target, "loadScoped") if( isHxdResLoaderExpr(target) ):
+				macro hxd.res.ScopedLoaders.get($v{scope.id}).loadScoped($a{args});
+			default:
+				mapped;
+			}
 		case EField(target, f):
 			if( isHxdResExpr(target) && !rewriteIgnoreFields.exists(f) )
 				{ expr : EField(typePathExpr(scope.typePath, target.pos), f), pos : mapped.pos };
