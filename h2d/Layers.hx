@@ -27,7 +27,7 @@ class Layers extends Object {
 		@param s An object to be added.
 	**/
 	@:dox(show)
-	override function addChild(s) {
+	override function addChild(s: h2d.Object) {
 		add(s, -1);
 	}
 

@@ -14,9 +14,13 @@ class Main extends hxd.App {
 		expect("pkgA.shared", clean(pkgA.A.shared()), "root_shared");
 		expect("pkgA.dup", clean(pkgA.A.dup()), "pkgA_dup");
 		expect("pkgA.dupViaLoader", clean(pkgA.A.dupViaLoader()), "pkgA_dup");
+		expectBool("pkgA.hasValueViaLoaderExists", pkgA.A.hasValueViaLoaderExists(), true);
+		expectBool("pkgA.hasValueViaLoaderExistsScoped", pkgA.A.hasValueViaLoaderExistsScoped(), true);
 		expect("pkgB.shared", clean(pkgB.B.shared()), "root_shared");
 		expect("pkgB.dup", clean(pkgB.B.dup()), "root_dup");
 		expect("pkgB.dupViaLoader", clean(pkgB.B.dupViaLoader()), "root_dup");
+		expectBool("pkgB.hasValueViaLoaderExists", pkgB.B.hasValueViaLoaderExists(), false);
+		expectBool("pkgB.hasValueViaLoaderExistsScoped", pkgB.B.hasValueViaLoaderExistsScoped(), false);
 
 		trace("ok");
 
@@ -24,6 +28,11 @@ class Main extends hxd.App {
 	}
 
 	static function expect( label : String, actual : String, expected : String ) {
+		if( actual != expected )
+			throw label + " mismatch, expected=" + expected + " actual=" + actual;
+	}
+
+	static function expectBool( label : String, actual : Bool, expected : Bool ) {
 		if( actual != expected )
 			throw label + " mismatch, expected=" + expected + " actual=" + actual;
 	}

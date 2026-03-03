@@ -32,6 +32,10 @@ class Loader {
 		return fs.exists(path);
 	}
 
+	public inline function existsScoped( path : String ) : Bool {
+		return exists(path);
+	}
+
 	public function load( path : String ) : Any {
 		return new Any(this, fs.get(path));
 	}

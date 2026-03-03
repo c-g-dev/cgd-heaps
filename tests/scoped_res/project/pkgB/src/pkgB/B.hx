@@ -14,4 +14,12 @@ class B {
 		return hxd.Res.loader.loadScoped("dup.txt").entry.getText();
 	}
 
+	public static function hasValueViaLoaderExists() {
+		return hxd.Res.loader.exists("value.txt");
+	}
+
+	public static function hasValueViaLoaderExistsScoped() {
+		return hxd.Res.loader.existsScoped("value.txt");
+	}
+
 }
