@@ -98,6 +98,18 @@ class Textbox extends h2d.Object {
         return future;
     }
 
+    public dynamic function open():Future {
+        alpha = 1;
+        return Future.immediate();
+    }
+
+    public dynamic function close():Future {
+        alpha = 0;
+        remove();
+        return Future.immediate();
+    }
+
+
     public function advance():Void {
         pendingAdvance = true;
         for( plugin in plugins ) plugin.onAdvance();
