@@ -1,5 +1,7 @@
 package pkgA;
 
+import hxd.Res;
+
 class A {
 
 	public static function value() {
@@ -24,6 +26,14 @@ class A {
 
 	public static function hasValueViaLoaderExistsScoped() {
 		return hxd.Res.loader.existsScoped("value.txt");
+	}
+
+	public static function valueViaImportedRes() {
+		return Res.value.entry.getText();
+	}
+
+	public static function dupViaImportedLoader() {
+		return Res.loader.loadScoped("dup.txt").entry.getText();
 	}
 
 }

@@ -1,7 +1,6 @@
 -cp src
 -cp ../../../
 -cp tests/cgd/richtext_wave/src
--lib heaps
 -lib format
 -lib hlsdl
 -main Main

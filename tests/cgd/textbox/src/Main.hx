@@ -42,9 +42,9 @@ class Main extends App {
             TextboxStyles.register(styleName, style);
         }
 
-        textbox = new Textbox(styleName, s2d);
-        textbox.x = 24;
-        textbox.y = 320;
+        textbox = new Textbox("test-style", s2d);
+       // textbox.x = 24;
+       // textbox.y = 320;
 
         textbox.on("stateChanged", function(state) {
             trace('textbox state: ' + Std.string(state));
@@ -64,7 +64,11 @@ class Main extends App {
         ];
         currentLineIndex = 0;
         readyForNextLine = false;
-        startCurrentLine();
+
+        textbox.open().then(function(_) {
+            startCurrentLine();
+        });
+        
     }
 
     override function update(dt:Float) {
@@ -86,6 +90,7 @@ class Main extends App {
         readyForNextLine = false;
         var html = lines[currentLineIndex];
         trace('writing line ' + (currentLineIndex + 1) + "/" + lines.length);
+        trace("textbox bounds: " + textbox.getBounds());
         textbox.write(html);
     }
 

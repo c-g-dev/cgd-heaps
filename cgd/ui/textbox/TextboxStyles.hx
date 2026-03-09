@@ -2,6 +2,7 @@ package cgd.ui.textbox;
 
 import cgd.ui.SuperTextTypewriter.SuperTextTypewriterDeallocateLinesEffect;
 import cgd.ui.SuperTextTypewriter.SuperTextTypewriterParagraphBreak;
+import cgd.ui.textbox.styling.TestStyle;
 
 class TextboxStyle {
 
@@ -16,6 +17,7 @@ class TextboxStyle {
     public var paragraphBreakMode:SuperTextTypewriterParagraphBreak;
     public var deallocateLinesEffect:SuperTextTypewriterDeallocateLinesEffect;
     public var pluginFactories:Array<Textbox -> TextboxPlugin>;
+    public var onInitCallbacks:Array<Textbox -> Void>;
 
     public function new() {
         background = null;
@@ -29,6 +31,12 @@ class TextboxStyle {
         paragraphBreakMode = WaitForAdvance;
         deallocateLinesEffect = Clear;
         pluginFactories = [];
+        onInitCallbacks = [];
+    }
+
+    public function addOnInit(callback:Textbox -> Void):Void {
+        if( callback == null ) throw "TextboxStyle.addOnInit requires a non-null callback.";
+        onInitCallbacks.push(callback);
     }
 
 }
@@ -58,6 +66,12 @@ class TextboxStyles {
     public static function remove(name:String):Void {
         if( name == null ) return;
         styles.remove(name);
+    }
+
+    public static function __init__():Void {
+        Runtime.afterResourcesLoaded(function() {
+            register("test-style", TestStyle.create());
+        });
     }
 
 }

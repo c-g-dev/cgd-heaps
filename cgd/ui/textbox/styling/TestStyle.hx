@@ -1,7 +1,5 @@
 package cgd.ui.textbox.styling;
 
-import cgd.ui.textbox.Textbox;
-import cgd.ui.textbox.TextboxPlugin;
 import cgd.ui.textbox.TextboxStyles;
 import cgd.ui.textbox.TextboxStyles.TextboxStyle;
 
@@ -17,7 +15,7 @@ class TestStyle {
 
         var background = hxd.Res.textbox.toTile();
         var targetHeight = hxd.Window.getInstance().height * HEIGHT_RATIO;
-        background.scaleToSize(background.width, targetHeight);
+       // background.scaleToSize(background.width, targetHeight);
 
         style.background = background;
         style.font = hxd.Res.fonts.vlgothic.VL_Gothic_Regular.toFont();
@@ -25,9 +23,9 @@ class TestStyle {
         style.textAreaY = PADDING;
         style.textAreaWidth = background.width - (PADDING * 2);
         style.maxLines = MAX_LINES;
-        style.pluginFactories.push(function(textbox:Textbox):TextboxPlugin {
+        style.addOnInit(function(textbox) {
+            AlignmentEffect.toBottom(textbox);
             BasicOpenCloseEffect.apply(textbox);
-            return null;
         });
 
         return style;

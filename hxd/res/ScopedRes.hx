@@ -355,22 +355,41 @@ class ScopedRes {
 		return true;
 	}
 
-	static function isHxdResExpr( e : Expr ) {
+	static function getImportedResIdentifiers() {
+		var names = new Map<String,Bool>();
+		for( imp in Context.getLocalImports() ) {
+			var parts = [for( part in imp.path ) part.name];
+			if( parts.length != 2 || parts[0] != "hxd" || parts[1] != "Res" )
+				continue;
+			switch( imp.mode ) {
+			case INormal:
+				names.set("Res", true);
+			case IAsName(alias):
+				names.set(alias, true);
+			case IAll:
+			}
+		}
+		return names;
+	}
+
+	static function isHxdResExpr( e : Expr, importedResIdentifiers : Map<String,Bool> ) {
 		return switch( e.expr ) {
 		case EField(base, "Res"):
 			switch( base.expr ) {
 			case EConst(CIdent("hxd")): true;
 			default: false;
 			}
+		case EConst(CIdent(name)):
+			importedResIdentifiers.exists(name);
 		default:
 			false;
 		}
 	}
 
-	static function isHxdResLoaderExpr( e : Expr ) {
+	static function isHxdResLoaderExpr( e : Expr, importedResIdentifiers : Map<String,Bool> ) {
 		return switch( e.expr ) {
 		case EField(base, "loader"):
-			isHxdResExpr(base);
+			isHxdResExpr(base, importedResIdentifiers);
 		default:
 			false;
 		}
@@ -398,22 +417,22 @@ class ScopedRes {
 		};
 	}
 
-	static function rewriteExpr( e : Expr, scope : ScopeInfo ) : Expr {
-		var mapped = ExprTools.map(e, function( sub ) return rewriteExpr(sub, scope));
+	static function rewriteExpr( e : Expr, scope : ScopeInfo, importedResIdentifiers : Map<String,Bool> ) : Expr {
+		var mapped = ExprTools.map(e, function( sub ) return rewriteExpr(sub, scope, importedResIdentifiers));
 		return switch( mapped.expr ) {
 		case ECall(callTarget, args):
 			switch( callTarget.expr ) {
-			case EField(target, "loadScoped") if( isHxdResLoaderExpr(target) ):
+			case EField(target, "loadScoped") if( isHxdResLoaderExpr(target, importedResIdentifiers) ):
 				macro hxd.res.ScopedLoaders.get($v{scope.id}).loadScoped($a{args});
-			case EField(target, "existsScoped") if( isHxdResLoaderExpr(target) ):
+			case EField(target, "existsScoped") if( isHxdResLoaderExpr(target, importedResIdentifiers) ):
 				macro hxd.res.ScopedLoaders.get($v{scope.id}).existsScoped($a{args});
-			case EField(target, "exists") if( isHxdResLoaderExpr(target) ):
+			case EField(target, "exists") if( isHxdResLoaderExpr(target, importedResIdentifiers) ):
 				macro hxd.res.ScopedLoaders.get($v{scope.id}).exists($a{args});
 			default:
 				mapped;
 			}
 		case EField(target, f):
-			if( isHxdResExpr(target) && !rewriteIgnoreFields.exists(f) )
+			if( isHxdResExpr(target, importedResIdentifiers) && !rewriteIgnoreFields.exists(f) )
 				{ expr : EField(typePathExpr(scope.typePath, target.pos), f), pos : mapped.pos };
 			else
 				mapped;
@@ -422,15 +441,15 @@ class ScopedRes {
 		}
 	}
 
-	static function rewriteFields( fields : Array<Field>, scope : ScopeInfo ) {
+	static function rewriteFields( fields : Array<Field>, scope : ScopeInfo, importedResIdentifiers : Map<String,Bool> ) {
 		for( f in fields ) {
 			switch( f.kind ) {
 			case FFun(fun) if( fun.expr != null ):
-				fun.expr = rewriteExpr(fun.expr, scope);
+				fun.expr = rewriteExpr(fun.expr, scope, importedResIdentifiers);
 			case FVar(t, e) if( e != null ):
-				f.kind = FVar(t, rewriteExpr(e, scope));
+				f.kind = FVar(t, rewriteExpr(e, scope, importedResIdentifiers));
 			case FProp(get, set, t, e) if( e != null ):
-				f.kind = FProp(get, set, t, rewriteExpr(e, scope));
+				f.kind = FProp(get, set, t, rewriteExpr(e, scope, importedResIdentifiers));
 			default:
 			}
 		}
@@ -471,6 +490,7 @@ class ScopedRes {
 		var def = ensureDefaultScope();
 		exprs.push(macro hxd.res.ScopedLoaders.setDefaultScope($v{def.id}));
 		exprs.push(macro hxd.Res.loader = hxd.res.ScopedLoaders.getDefaultLoader());
+		exprs.push(macro @:privateAccess cgd.Runtime.notifyResourcesLoaded());
 		return exprs;
 	}
 
@@ -489,7 +509,8 @@ class ScopedRes {
 		if( !shouldRewriteClass() )
 			return fields;
 		var scope = getCurrentScope();
-		rewriteFields(fields, scope);
+		var importedResIdentifiers = getImportedResIdentifiers();
+		rewriteFields(fields, scope, importedResIdentifiers);
 		return fields;
 	}
 
@@ -601,6 +622,7 @@ class ScopedRes {
 		var def = ensureDefaultScope();
 		exprs.push(macro hxd.res.ScopedLoaders.setDefaultScope($v{def.id}));
 		exprs.push(macro hxd.Res.loader = hxd.res.ScopedLoaders.getDefaultLoader());
+		exprs.push(macro @:privateAccess cgd.Runtime.notifyResourcesLoaded());
 		return { expr : EBlock(exprs), pos : Context.currentPos() };
 	}
 	#end

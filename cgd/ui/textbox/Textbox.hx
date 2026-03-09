@@ -51,6 +51,9 @@ class Textbox extends h2d.Object {
                 plugin.onAttach();
             }
         }
+
+        for( callback in style.onInitCallbacks )
+            callback(this);
     }
 
     function resolveFont():h2d.Font {
@@ -70,6 +73,7 @@ class Textbox extends h2d.Object {
             throw "Textbox.write called while a previous write is still in progress.";
 
         if( html == null || StringTools.trim(html) == "" ) html = "<p></p>";
+        if( !isOpen() ) open();
 
         for( plugin in plugins ) plugin.onBeforeWrite(html);
         emit("write", html);
@@ -101,6 +105,14 @@ class Textbox extends h2d.Object {
     public dynamic function open():Future {
         alpha = 1;
         return Future.immediate();
+    }
+
+    public dynamic function isOpen():Bool {
+        return alpha > 0;
+    }
+
+    public dynamic function isClosed():Bool {
+        return !isOpen();
     }
 
     public dynamic function close():Future {

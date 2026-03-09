@@ -14,6 +14,8 @@ class Main extends hxd.App {
 		expect("pkgA.shared", clean(pkgA.A.shared()), "root_shared");
 		expect("pkgA.dup", clean(pkgA.A.dup()), "pkgA_dup");
 		expect("pkgA.dupViaLoader", clean(pkgA.A.dupViaLoader()), "pkgA_dup");
+		expect("pkgA.valueViaImportedRes", clean(pkgA.A.valueViaImportedRes()), "pkgA_value");
+		expect("pkgA.dupViaImportedLoader", clean(pkgA.A.dupViaImportedLoader()), "pkgA_dup");
 		expectBool("pkgA.hasValueViaLoaderExists", pkgA.A.hasValueViaLoaderExists(), true);
 		expectBool("pkgA.hasValueViaLoaderExistsScoped", pkgA.A.hasValueViaLoaderExistsScoped(), true);
 		expect("pkgB.shared", clean(pkgB.B.shared()), "root_shared");
