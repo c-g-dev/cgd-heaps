@@ -241,6 +241,42 @@ class HtmlText extends Text {
 		return { width: width, height: height, baseLine: baseLine, baseLineOffset : offset };
 	}
 
+	inline function parseImgDimension( e : Xml, attr : String ) : Null<Float> {
+		if( !e.exists(attr) ) return null;
+		var value = e.get(attr);
+		if( value == null || value == "" ) throw 'HtmlText <img> "${attr}" attribute must be a non-empty number.';
+		var parsed = Std.parseFloat(value);
+		if( Math.isNaN(parsed) || parsed <= 0 ) throw 'HtmlText <img> "${attr}" attribute must be a positive number, got "${value}".';
+		return parsed;
+	}
+
+	function resolveImageLayout( tile : Tile, e : Xml ) {
+		if( tile.width <= 0 || tile.height <= 0 ) throw "HtmlText <img> tile dimensions must be positive.";
+		var width = tile.width;
+		var height = tile.height;
+		var requestedWidth = parseImgDimension(e, "width");
+		var requestedHeight = parseImgDimension(e, "height");
+		if( requestedWidth != null && requestedHeight != null ) {
+			width = requestedWidth;
+			height = requestedHeight;
+		} else if( requestedWidth != null ) {
+			width = requestedWidth;
+			height = tile.height * (requestedWidth / tile.width);
+		} else if( requestedHeight != null ) {
+			height = requestedHeight;
+			width = tile.width * (requestedHeight / tile.height);
+		}
+		var scaleX = width / tile.width;
+		var scaleY = height / tile.height;
+		return {
+			width: width,
+			height: height,
+			scaleX: scaleX,
+			scaleY: scaleY,
+			dy: tile.dy * scaleY,
+		};
+	}
+
 	override function validateText() {
 		textXml = parseText(text);
 		validateNodes(textXml);
@@ -392,21 +428,19 @@ class HtmlText extends Text {
 			case "br":
 				makeLineBreak();
 			case "img":
-				// TODO: Support width/height attributes
-				// Support max-width/max-height attributes (downscale)
-				// Support min-width/min-height attributes (upscale)
 				var i : Tile = loadImage(e.get("src"));
 				if ( i == null ) i = Tile.fromColor(0xFF00FF, 8, 8);
+				var image = resolveImageLayout(i, e);
 
-				var size = metrics[metrics.length - 1].width + i.width + imageSpacing;
+				var size = metrics[metrics.length - 1].width + image.width + imageSpacing;
 				if (realMaxWidth >= 0 && size > realMaxWidth && metrics[metrics.length - 1].width > 0) {
 					if ( splitNode.node != null ) {
-						size = wordSplit() + i.width + imageSpacing;
+						size = wordSplit() + image.width + imageSpacing;
 						var info = metrics[metrics.length - 1];
 						// Bug: height/baseLine may be innacurate in case of sizeA sizeB<split>sizeA where sizeB is larger.
 						switch ( lineHeightMode ) {
 							case Accurate:
-								var grow = i.height - i.dy - info.baseLine;
+								var grow = image.height - image.dy - info.baseLine;
 								var h = info.height;
 								var bl = info.baseLine;
 								var offset = info.baseLineOffset;
@@ -414,7 +448,7 @@ class HtmlText extends Text {
 									h += grow;
 									bl += grow;
 								}
-								metrics.push(makeLineInfo(size, Math.max(h, bl + i.dy), bl, offset));
+								metrics.push(makeLineInfo(size, Math.max(h, bl + image.dy), bl, offset));
 							default:
 								metrics.push(makeLineInfo(size, info.height, info.baseLine, info.baseLineOffset));
 						}
@@ -423,7 +457,7 @@ class HtmlText extends Text {
 					var info = metrics[metrics.length - 1];
 					info.width = size;
 					if( lineHeightMode == Accurate ) {
-						var grow = (i.height - i.dy) - info.height;
+						var grow = (image.height - image.dy) - info.height;
 						if( grow > 0 ) {
 							info.height += grow;
 							if( imageVerticalAlign == Middle ) {
@@ -432,7 +466,7 @@ class HtmlText extends Text {
 							}
 						}
 						if( imageVerticalAlign == Bottom ) {
-							var grow = (i.height - i.dy) - info.baseLine;
+							var grow = (image.height - image.dy) - info.baseLine;
 							if(grow > 0)
 								info.baseLine += grow;
 						}
@@ -790,25 +824,28 @@ class HtmlText extends Text {
 			case "img":
 				var i : Tile = loadImage(e.get("src"));
 				if ( i == null ) i = Tile.fromColor(0xFF00FF, 8, 8);
+				var image = resolveImageLayout(i, e);
 				var py = yPos;
 				switch(imageVerticalAlign) {
 					case Bottom:
-						py += metrics[sizePos].baseLine - i.height;
+						py += metrics[sizePos].baseLine - image.height;
 					case Middle:
-						py += ((metrics[sizePos].baseLine + metrics[sizePos].baseLineOffset) - i.height)/2;
+						py += ((metrics[sizePos].baseLine + metrics[sizePos].baseLineOffset) - image.height)/2;
 					case Top:
 				}
-				if( py + i.dy < calcYMin )
-					calcYMin = py + i.dy;
+				if( py + image.dy < calcYMin )
+					calcYMin = py + image.dy;
 				if( rebuild ) {
 					var b = new Bitmap(i, this);
 					b.x = xPos;
 					b.y = py;
+					b.scaleX = image.scaleX;
+					b.scaleY = image.scaleY;
 					elements.push(b);
 				}
 				newLine = false;
 				prevChar = -1;
-				xPos += i.width + imageSpacing;
+				xPos += image.width + imageSpacing;
 			case "a":
 				if( e.exists("href") ) {
 					finalizeInteractive();

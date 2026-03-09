@@ -90,9 +90,14 @@ class SuperText extends HtmlText {
 		);
 	}
 
-	public inline function img(name:String) : String {
+	public inline function img(name:String, ?width:Float, ?height:Float) : String {
 		if( name == null || name == "" ) throw "SuperText.img requires a non-empty image name.";
-		return '<img src="' + name + '"/>';
+		if( width != null && (Math.isNaN(width) || width <= 0) ) throw 'SuperText.img width must be a positive number, got "${width}".';
+		if( height != null && (Math.isNaN(height) || height <= 0) ) throw 'SuperText.img height must be a positive number, got "${height}".';
+		var result = '<img src="' + name + '"';
+		if( width != null ) result += ' width="' + width + '"';
+		if( height != null ) result += ' height="' + height + '"';
+		return result + '/>';
 	}
 
 	public function setFontName(name:String) : Font {
@@ -433,24 +438,27 @@ class SuperText extends HtmlText {
 			case "img":
 				var i : Tile = loadImage(e.get("src"));
 				if( i == null ) i = Tile.fromColor(0xFF00FF, 8, 8);
+				var image = resolveImageLayout(i, e);
 				@:privateAccess var py = yPos;
 				switch( imageVerticalAlign ) {
 				case Bottom:
-					@:privateAccess py += metrics[sizePos].baseLine - i.height;
+					@:privateAccess py += metrics[sizePos].baseLine - image.height;
 				case Middle:
-					@:privateAccess py += ((metrics[sizePos].baseLine + metrics[sizePos].baseLineOffset) - i.height) * 0.5;
+					@:privateAccess py += ((metrics[sizePos].baseLine + metrics[sizePos].baseLineOffset) - image.height) * 0.5;
 				case Top:
 				}
-				@:privateAccess if( py + i.dy < calcYMin ) calcYMin = py + i.dy;
+				@:privateAccess if( py + image.dy < calcYMin ) calcYMin = py + image.dy;
 				if( rebuild ) {
 					var b = new Bitmap(i, this);
 					@:privateAccess b.x = xPos;
 					b.y = py;
+					b.scaleX = image.scaleX;
+					b.scaleY = image.scaleY;
 					@:privateAccess elements.push(b);
 				}
 				@:privateAccess newLine = false;
 				@:privateAccess prevChar = -1;
-				@:privateAccess xPos += i.width + imageSpacing;
+				@:privateAccess xPos += image.width + imageSpacing;
 			case "a":
 				if( e.exists("href") ) {
 					finalizeInteractive();

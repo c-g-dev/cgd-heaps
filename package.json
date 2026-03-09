@@ -1,0 +1,5 @@
+{
+    "scripts": {
+        "refresh": "haxelib git cgd-heaps https://github.com/HaxeFoundation/cgd-heaps.git"
+    }
+}
