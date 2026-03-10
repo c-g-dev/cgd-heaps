@@ -63,7 +63,7 @@ class BDFFont extends Resource {
 			throw 'File does not appear to be a BDF file. Expecting STARTFONT';
 
 		// Init empty font
-		font = new h2d.Font( null, 0 );
+		font = new h2d.Font( null, 1 );
 
 		// Break file into lines
 		var lines = text.split("\n");
@@ -93,6 +93,7 @@ class BDFFont extends Resource {
 		var line : String;
 		var prop : String;
 		var args : Array<String>;
+		var sizeFound = false;
 
 		// Iterate lines
 		while ( lines.length > 0 ) {
@@ -107,7 +108,8 @@ class BDFFont extends Resource {
 				case 'FAMILY_NAME':
 					font.name = extractStr( args );
 				case 'SIZE':
-					font.size = font.initSize = extractInt( args[0] );
+					font.setRawSize(extractInt(args[0]));
+					sizeFound = true;
 				case 'BITS_PER_PIXEL':
 					this.bitsPerPixel = extractInt( args[0] );
 					if ( [1,2,4,8].indexOf( bitsPerPixel ) != -1 ) throw 'BITS_PER_PIXEL of $bitsPerPixel not supported, at line $linenum';
@@ -123,7 +125,7 @@ class BDFFont extends Resource {
 			}
 		}
 		// Check we have everything we need
-		if ( font.initSize == 0 ) throw 'SIZE not found or is 0';
+		if ( !sizeFound ) throw 'SIZE not found or is 0';
 
 		// Return linenum we are up to
 		return linenum;

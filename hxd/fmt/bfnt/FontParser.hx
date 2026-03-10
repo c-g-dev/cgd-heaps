@@ -10,8 +10,14 @@ class FontParser {
 		// TODO: Support multiple textures per font.
 
 		var tile : h2d.Tile = null;
-		var font : h2d.Font = new h2d.Font(null, 0);
+		var font : h2d.Font = new h2d.Font(null, 1);
 		var glyphs = font.glyphs;
+		var hasRawSize = false;
+
+		inline function setRawSize( rawSize : Int ) {
+			hasRawSize = true;
+			font.setRawSize(rawSize);
+		}
 
 		inline function resolveTileSameName() {
 			font.tilePath = new haxe.io.Path(path).file + ".png";
@@ -51,7 +57,7 @@ class FontParser {
 			if (xml.hasNode.info) {
 				// support for Littera XML format (starts with <font>) and BMFont XML format (<?xml).
 				font.name = xml.node.info.att.face;
-				font.size = font.initSize = Std.parseInt(xml.node.info.att.size);
+				setRawSize(Std.parseInt(xml.node.info.att.size));
 				font.lineHeight = Std.parseInt(xml.node.common.att.lineHeight);
 				font.baseLine = Std.parseInt(xml.node.common.att.base);
 
@@ -79,7 +85,7 @@ class FontParser {
 				resolveTileSameName();
 
 				font.name = xml.att.family;
-				font.size = font.initSize = Std.parseInt(xml.att.size);
+				setRawSize(Std.parseInt(xml.att.size));
 				font.lineHeight = Std.parseInt(xml.att.height);
 				inline function parseCode( code : String ) : Int {
 					return StringTools.startsWith(code, "&#") ? Std.parseInt(code.substr(2,code.length-3)) : code.charCodeAt(0);
@@ -139,7 +145,7 @@ class FontParser {
 						while (idx < line.length && reg.matchSub(line, idx)) {
 							switch (reg.matched(1)) {
 								case "face": font.name = processValue();
-								case "size": font.size = font.initSize = extractInt();
+								case "size": setRawSize(extractInt());
 							}
 							next();
 						}
@@ -207,7 +213,7 @@ class FontParser {
 
 				switch (id) {
 					case 1: // info
-						font.size = font.initSize = bytes.readInt16();
+						setRawSize(bytes.readInt16());
 						// skip bitField (1), charSet (1), stretchH (2), aa (1), padding (4), spacing (2) and outline (1)
 						bytes.position += 12;
 						font.name = bytes.readUntil(0);
@@ -250,6 +256,8 @@ class FontParser {
 		case sign:
 			throw "Unknown font signature " + StringTools.hex(sign, 8);
 		}
+		if ( !hasRawSize )
+			throw "Font size not found";
 		if( glyphs.get(" ".code) == null )
 			glyphs.set(" ".code, new h2d.Font.FontChar(tile.sub(0, 0, 0, 0), font.size>>1));
 

@@ -38,6 +38,7 @@ class BitmapFont extends Resource {
 	public function toSdfFont(?size:Int, channel : h2d.Font.SDFChannel = 0, alphaCutoff : Float = 0.5, smoothing : Float = -1 ) {
 		if ( sdfFonts == null ) sdfFonts = new Array();
 		if ( size == null ) size = toFont().size;
+		size = normalizeSize(size);
 		for ( font in sdfFonts ) {
 			switch ( font.type ) {
 				case SignedDistanceField(fchannel, falphaCutoff, fsmoothing):
@@ -52,6 +53,13 @@ class BitmapFont extends Resource {
 		font.resizeTo(size);
 		sdfFonts.push(font);
 		return font;
+	}
+
+	inline function normalizeSize( size : Int ) : Int {
+		var normalized = size < 0 ? -size : size;
+		if ( normalized == 0 )
+			throw "Font size must be non-zero";
+		return normalized;
 	}
 
 	function resolveSdfTile( path : String ) : h2d.Tile {

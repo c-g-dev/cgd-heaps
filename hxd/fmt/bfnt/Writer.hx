@@ -28,7 +28,7 @@ class Writer {
 		out.writeByte(0);
 		out.writeByte(VERSION);
 		writeString(font.name);
-		out.writeInt16(font.size);
+		out.writeInt16(font.size * font.sizeParity);
 		writeString(font.tilePath);
 		out.writeInt16(Std.int(font.lineHeight));
 		out.writeInt16(Std.int(font.baseLine));

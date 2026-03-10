@@ -20,7 +20,7 @@ class FontBuilder {
 	var innerTex : h3d.mat.Texture;
 
 	function new(name, size, opt) {
-		this.font = new h2d.Font(name, size);
+		this.font = new h2d.Font(name, normalizeSize(size));
 		this.options = opt == null ? { } : opt;
 		if( options.antiAliasing == null ) options.antiAliasing = true;
 		if( options.chars == null ) options.chars = hxd.Charset.DEFAULT_CHARS;
@@ -146,11 +146,12 @@ class FontBuilder {
 	#end
 
 	public static function getFont( name : String, size : Int, ?options : FontBuildOptions ) {
-		var key = name + "#" + size;
+		var normalizedSize = normalizeSize(size);
+		var key = name + "#" + normalizedSize;
 		var f = FONTS.get(key);
 		if( f != null && f.tile.innerTex != null )
 			return f;
-		f = new FontBuilder(name, size, options).build();
+		f = new FontBuilder(name, normalizedSize, options).build();
 		FONTS.set(key, f);
 		return f;
 	}
@@ -159,6 +160,13 @@ class FontBuilder {
 		for( f in FONTS )
 			f.dispose();
 		FONTS = new Map();
+	}
+
+	static inline function normalizeSize( size : Int ) {
+		var normalized = size < 0 ? -size : size;
+		if ( normalized == 0 )
+			throw "Font size must be non-zero";
+		return normalized;
 	}
 
 	static var FONTS = new Map<String,h2d.Font>();

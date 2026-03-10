@@ -154,9 +154,20 @@ class Font {
 	**/
 	public var name(default, null) : String;
 	/**
-		Current font size. Font can be resized with `resizeTo`.
+		Current font size. Always positive and can be resized with `resizeTo`.
 	**/
 	public var size(default, null) : Int;
+	/**
+		Sign of the source size from font data.
+		`1` for non-negative sizes and `-1` for negative source sizes.
+		Does not change when calling `resizeTo`.
+	**/
+	public var sizeParity(default, null) : Int;
+	/**
+		Font scale relative to the initial parsed size.
+		Setting this value will call `resizeTo`.
+	**/
+	public var scale(get, set) : Float;
 	/**
 		The baseline value of the font represents the base on which characters will sit.
 
@@ -200,8 +211,7 @@ class Font {
 	**/
 	function new(name : String, size : Int, ?type : FontType) {
 		this.name = name;
-		this.size = size;
-		this.initSize = size;
+		setRawSize(size);
 		glyphs = new Map();
 		defaultChar = nullChar = new FontChar(new Tile(null, 0, 0, 0, 0),0);
 		charset = hxd.Charset.getDefault();
@@ -211,6 +221,43 @@ class Font {
 			this.type = BitmapFont;
 		else
 			this.type = type;
+	}
+
+	inline function normalizeSize( size : Int ) {
+		var normalized = size < 0 ? -size : size;
+		if ( normalized == 0 )
+			throw "Font size must be non-zero";
+		return normalized;
+	}
+
+	inline function getEffectiveSize() : Int {
+		return size * sizeParity;
+	}
+
+	function set_scale( value : Float ) : Float {
+		if ( Math.isNaN(value) || value == Math.POSITIVE_INFINITY || value == Math.NEGATIVE_INFINITY )
+			throw "Font scale must be finite";
+		if ( value <= 0 )
+			throw "Font scale must be positive";
+		var scaledSize = Math.round(initSize * value);
+		if ( scaledSize == 0 )
+			throw "Font scale is too small";
+		resizeTo(scaledSize);
+		return scale;
+	}
+
+	inline function get_scale() : Float {
+		return size / initSize;
+	}
+
+	@:allow(hxd.fmt.bfnt.FontParser)
+	@:allow(hxd.fmt.bfnt.Reader)
+	@:allow(hxd.res.BDFFont)
+	private function setRawSize( rawSize : Int ) {
+		sizeParity = rawSize < 0 ? -1 : 1;
+		var normalized = normalizeSize(rawSize);
+		size = normalized;
+		initSize = normalized;
 	}
 
 	/**
@@ -251,7 +298,9 @@ class Font {
 		Creates a copy of the font instance.
 	**/
 	public function clone() {
-		var f = new Font(name, size);
+		var f = new Font(name, size * sizeParity);
+		f.initSize = initSize;
+		f.sizeParity = sizeParity;
 		f.baseLine = baseLine;
 		f.lineHeight = lineHeight;
 		f.tile = tile.clone();
@@ -279,7 +328,9 @@ class Font {
 		@param size The new font size.
 	**/
 	public function resizeTo( size : Int ) {
-		var ratio = size / this.size;
+		var normalized = normalizeSize(size);
+		if ( normalized == this.size ) return;
+		var ratio = (normalized * sizeParity) / getEffectiveSize();
 		for( c in glyphs ) {
 			c.width *= ratio;
 			c.t.scaleToSize(c.t.width * ratio, c.t.height * ratio);
@@ -293,7 +344,7 @@ class Font {
 		}
 		lineHeight = Math.ceil(lineHeight * ratio);
 		baseLine = Math.ceil(baseLine * ratio);
-		this.size = size;
+		this.size = normalized;
 	}
 
 	/**

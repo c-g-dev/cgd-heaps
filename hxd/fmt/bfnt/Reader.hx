@@ -19,7 +19,9 @@ class Reader {
 
 		switch (i.readByte()) {
 			case 1:
-				font = new h2d.Font(i.readString(i.readUInt16()), i.readInt16());
+				var name = i.readString(i.readUInt16());
+				var rawSize = i.readInt16();
+				font = new h2d.Font(name, rawSize);
 				font.tilePath = i.readString(i.readUInt16());
 				var tile = font.tile = resolveTile(font.tilePath);
 				font.lineHeight = i.readInt16();
