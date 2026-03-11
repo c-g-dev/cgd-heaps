@@ -1,15 +1,15 @@
 package cgd.coro;
 
-import coro.Coroutine.CoroutineContext;
-import coro.Coroutine.CoroutinePriority;
-import coro.Future;
+import cgd.coro.Coroutine.CoroutineContext;
+import cgd.coro.Coroutine.CoroutinePriority;
+import cgd.coro.Future;
 import ludi.commons.collections.Stack;
 
 import Map;
 
 
-@:access(coro.CoroutineContext)
-@:access(coro.Future)
+@:access(cgd.coro.CoroutineContext)
+@:access(cgd.coro.Future)
 class CoroutineSystem {
 	public static var MAIN:CoroutineSystem = new CoroutineSystem();
 

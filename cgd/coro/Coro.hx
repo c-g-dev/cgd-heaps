@@ -1,23 +1,23 @@
 package cgd.coro;
 
-import coro.ds.MaybeReturn;
-import coro.Coroutine.CoroutineContext;
-import coro.CoroutineSystem;
-import coro.Coroutine.CoroutineFunction;
-import coro.ext.CoroutineExtensions;
-import coro.Coroutine.FrameYield;
+import cgd.coro.ds.MaybeReturn;
+import cgd.coro.Coroutine.CoroutineContext;
+import cgd.coro.CoroutineSystem;
+import cgd.coro.Coroutine.CoroutineFunction;
+import cgd.coro.ext.CoroutineExtensions;
+import cgd.coro.Coroutine.FrameYield;
 
 
 import haxe.macro.Expr;
 import haxe.macro.Context;
 
-import coro.Coroutine;
+import cgd.coro.Coroutine;
 import haxe.macro.Expr.ExprOf;
 
 
 
-@:access(coro.CoroutineSystem)
-@:access(coro.CoroutineContext)
+@:access(cgd.coro.CoroutineSystem)
+@:access(cgd.coro.CoroutineContext)
 class Coro {
     public static function start(coroutine: CoroutineFunction):Coroutine {
         var coro = new Coroutine(coroutine);
@@ -41,11 +41,11 @@ class Coro {
 
     public static macro function yield(callingExpr:ExprOf<FrameYield>):Expr {
         return macro {
-            if(!coro.Coroutine.CoroUtils.hasNextOnce()){
-                return coro.Coro.once(() -> return $callingExpr);
+            if(!cgd.coro.Coroutine.CoroUtils.hasNextOnce()){
+                return cgd.coro.Coro.once(() -> return $callingExpr);
             }
             else {
-                coro.Coroutine.CoroUtils.incrementOnce();
+                cgd.coro.Coroutine.CoroUtils.incrementOnce();
             }
         }
     }
@@ -57,7 +57,7 @@ class Coro {
     public static macro function step(block:Expr):Expr {
         switch (block.expr) {
             case EBlock(_):
-                return macro coro.Coro.start((_) -> $block);
+                return macro cgd.coro.Coro.start((_) -> $block);
             case _:
                 Context.error("Coro.step expects a block expression: Coro.step({ ... })", block.pos);
         }
@@ -88,24 +88,24 @@ class Coro {
 
 	    			var dataObj:Expr = { expr: EObjectDecl(dataObjectFields), pos: pos };
 
-	    			return macro coro.Coro.start((ctx) -> {
-	    				var __obj = coro.Coro.once(() -> return $object);
-	    				var __duration:Float = coro.Coro.once(() -> return $duration);
-	    				var __tw = coro.Coro.once(() -> return $dataObj);
+	    			return macro cgd.coro.Coro.start((ctx) -> {
+	    				var __obj = cgd.coro.Coro.once(() -> return $object);
+	    				var __duration:Float = cgd.coro.Coro.once(() -> return $duration);
+	    				var __tw = cgd.coro.Coro.once(() -> return $dataObj);
 
 	    				if (__duration <= 0) {
 	    					${{ expr: EBlock(assignFinal), pos: pos }}
-	    					return coro.Coroutine.FrameYield.Stop;
+	    					return cgd.coro.Coroutine.FrameYield.Stop;
 	    				}
 
 	    				var __t:Float = (haxe.Timer.stamp() - __tw.startTime) / __duration;
 	    				if (__t >= 1) {
 	    					${{ expr: EBlock(assignFinal), pos: pos }}
-	    					return coro.Coroutine.FrameYield.Stop;
+	    					return cgd.coro.Coroutine.FrameYield.Stop;
 	    				}
 
 	    				${{ expr: EBlock(assignRunning), pos: pos }}
-	    				return coro.Coroutine.FrameYield.WaitNextFrame;
+	    				return cgd.coro.Coroutine.FrameYield.WaitNextFrame;
 	    			});
 	    		case _:
 	    			Context.error("Coro.tween expects an object literal for fields, e.g., {x: 10, y: 20}", pos);

@@ -422,6 +422,8 @@ class ScopedRes {
 		return switch( mapped.expr ) {
 		case ECall(callTarget, args):
 			switch( callTarget.expr ) {
+			case EField(target, "load") if( isHxdResLoaderExpr(target, importedResIdentifiers) ):
+				macro hxd.res.ScopedLoaders.get($v{scope.id}).loadScoped($a{args});
 			case EField(target, "loadScoped") if( isHxdResLoaderExpr(target, importedResIdentifiers) ):
 				macro hxd.res.ScopedLoaders.get($v{scope.id}).loadScoped($a{args});
 			case EField(target, "existsScoped") if( isHxdResLoaderExpr(target, importedResIdentifiers) ):

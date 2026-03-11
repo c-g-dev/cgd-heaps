@@ -1,6 +1,6 @@
 package cgd.coro;
 
-@:using(coro.macros.FutureMacroExtensions)
+@:using(cgd.coro.macros.FutureMacroExtensions)
 class Future<T = Dynamic> {
 	public var isComplete(default, null):Bool;
 

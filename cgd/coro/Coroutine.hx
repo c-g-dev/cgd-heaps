@@ -1,17 +1,17 @@
 package cgd.coro;
 
 import ludi.commons.collections.Set;
-import coro.ext.CoroutineExtensions;
+import cgd.coro.ext.CoroutineExtensions;
 import haxe.extern.EitherType;
 import haxe.ds.Either;
-import coro.ds.MaybeReturn;
+import cgd.coro.ds.MaybeReturn;
 import ludi.commons.collections.Stack;
 import hxd.Timer;
 import hxd.System;
 
 import Map;
-import coro.CoroutineSystem;
-import coro.Future;
+import cgd.coro.CoroutineSystem;
+import cgd.coro.Future;
 
 
 typedef CoroutineBaseFunction<T = Dynamic> = (ctx:CoroutineContext<T>) -> FrameYield<T>;
@@ -57,9 +57,9 @@ abstract CoroutineFunction<T = Dynamic>(CoroutineBaseFunction<T>) from Coroutine
 	}
 }
 
-@:using(coro.ext.CoroutineExtensions)
-@:using(coro.macros.CoroutineMacroExtensions)
-@:access(coro.CoroutineContext)
+@:using(cgd.coro.ext.CoroutineExtensions)
+@:using(cgd.coro.macros.CoroutineMacroExtensions)
+@:access(cgd.coro.CoroutineContext)
 abstract Coroutine<T = Dynamic>(CoroutineContext<T>) {
 	public function new(coro:EitherType<CoroutineFunction<T>, CoroutineContext<T>>) {
 		if (coro is CoroutineContext) {
@@ -73,8 +73,8 @@ abstract Coroutine<T = Dynamic>(CoroutineContext<T>) {
 		return this;
 }
 
-@:using(coro.macros.CoroutineMacroExtensions)
-@:access(coro.CoroutineSystem)
+@:using(cgd.coro.macros.CoroutineMacroExtensions)
+@:access(cgd.coro.CoroutineSystem)
 class CoroutineContext<T = Dynamic> {
 	public var uuid(default, null):String;
 
@@ -204,7 +204,7 @@ class CoroutineContext<T = Dynamic> {
 	}
 }
 
-@:using(coro.macros.FrameYieldMacroExtensions)
+@:using(cgd.coro.macros.FrameYieldMacroExtensions)
 enum FrameYield<T = Dynamic> {
 	WaitNextFrame;
 	WaitFrames(f:Int);
@@ -220,8 +220,8 @@ enum abstract CoroutinePriority(Int) from Int to Int {
 	var Rendering = 2;
 }
 
-@:access(coro.CoroutineSystem)
-@:access(coro.CoroutineContext)
+@:access(cgd.coro.CoroutineSystem)
+@:access(cgd.coro.CoroutineContext)
 class CoroUtils {
 	public static function isComplete(coro:Coroutine):Bool {
 		return coro.context().isComplete;

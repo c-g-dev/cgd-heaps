@@ -1,6 +1,6 @@
 package cgd.coro.macros;
 
-import coro.Future;
+import cgd.coro.Future;
 import haxe.macro.Expr;
 import haxe.macro.Context;
 
@@ -19,18 +19,18 @@ class FutureMacroExtensions {
 
 		if (!valueNeeded) {
 			return macro {
-				var __future = coro.Coro.once(() -> {return $callingExpr;});
+				var __future = cgd.coro.Coro.once(() -> {return $callingExpr;});
 				if (!__future.isComplete)
-					return coro.Coroutine.FrameYield.Suspend(__future);
+					return cgd.coro.Coroutine.FrameYield.Suspend(__future);
 			};
 		} else {
 			return macro {
-				var __future = coro.Coro.once(() -> return $callingExpr);
+				var __future = cgd.coro.Coro.once(() -> return $callingExpr);
 
 				var __awaitResult:Dynamic = null;
 
 				if (!__future.isComplete) {
-					return coro.Coroutine.FrameYield.Suspend(__future);
+					return cgd.coro.Coroutine.FrameYield.Suspend(__future);
 				} else {
 					@:privateAccess __awaitResult = __future._result;
 				}

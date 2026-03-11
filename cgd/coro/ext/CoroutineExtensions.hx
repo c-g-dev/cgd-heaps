@@ -1,12 +1,12 @@
 package cgd.coro.ext;
 
-import coro.Coroutine;
-import coro.Future;
-import coro.CoroutineSystem;
+import cgd.coro.Coroutine;
+import cgd.coro.Future;
+import cgd.coro.CoroutineSystem;
 
-@:access(coro.CoroutineContext)
-@:access(coro.CoroutineSystem)
-@:access(coro.Future)
+@:access(cgd.coro.CoroutineContext)
+@:access(cgd.coro.CoroutineSystem)
+@:access(cgd.coro.Future)
 class CoroutineExtensions {
 	public static function start(coroutine:Coroutine):Void {
 		if (coroutine.context().hasStarted)

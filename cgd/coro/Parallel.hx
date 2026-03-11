@@ -1,11 +1,11 @@
 package cgd.coro;
 
-import coro.Coroutine;
+import cgd.coro.Coroutine;
 
-import coro.Coroutine.CoroutineContext;
-import coro.Coroutine.CoroutineObject;
-import coro.Coroutine.FrameYield;
-import coro.Future;
+import cgd.coro.Coroutine.CoroutineContext;
+import cgd.coro.Coroutine.CoroutineObject;
+import cgd.coro.Coroutine.FrameYield;
+import cgd.coro.Future;
 
 
 class Parallel extends CoroutineObject {
