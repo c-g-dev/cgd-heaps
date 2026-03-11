@@ -1,6 +1,6 @@
 package cgd.ui.panel;
 
-import heaps.coroutine.Future;
+import cgd.coro.Future;
 
 private typedef PanelStackEntry = {
     var panel:Panel;

@@ -1,4 +1,4 @@
-package coro;
+package cgd.coro;
 
 import ludi.commons.collections.Set;
 import coro.ext.CoroutineExtensions;

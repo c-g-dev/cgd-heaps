@@ -7,7 +7,7 @@ import cgd.ui.multichoice.MultiChoiceStyles.MultiChoiceItemRenderer;
 import cgd.ui.multichoice.MultiChoiceStyles.MultiChoiceLayout;
 import cgd.ui.multichoice.MultiChoiceStyles.MultiChoiceOption;
 import cgd.ui.multichoice.MultiChoiceStyles.MultiChoiceStyle;
-import heaps.coroutine.Future;
+import cgd.coro.Future;
 
 private typedef MultiChoiceEntry = {
     var option:MultiChoiceOption;

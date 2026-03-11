@@ -2,7 +2,7 @@ package cgd.ui.textbox.styling;
 
 import cgd.Behavior;
 import cgd.ui.textbox.Textbox;
-import heaps.coroutine.Future;
+import cgd.coro.Future;
 
 class BasicOpenCloseEffect extends Behavior {
 

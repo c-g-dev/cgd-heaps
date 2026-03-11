@@ -2,7 +2,7 @@ package cgd.ui.panel.styling;
 
 import cgd.Behavior;
 import cgd.ui.panel.Panel;
-import heaps.coroutine.Future;
+import cgd.coro.Future;
 
 class BasicOpenCloseEffect extends Behavior {
 

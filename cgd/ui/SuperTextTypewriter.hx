@@ -1,6 +1,6 @@
 package cgd.ui;
 
-import heaps.coroutine.Future;
+import cgd.coro.Future;
 
 enum SuperTextTypewriterParagraphBreak {
     WaitForAdvance;

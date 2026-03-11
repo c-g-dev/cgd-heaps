@@ -1,4 +1,4 @@
-package coro;
+package cgd.coro;
 
 @:using(coro.macros.FutureMacroExtensions)
 class Future<T = Dynamic> {

@@ -1,4 +1,4 @@
-package coro.macros;
+package cgd.coro.macros;
 
 import haxe.macro.Expr;
 import coro.Coroutine.FrameYield;

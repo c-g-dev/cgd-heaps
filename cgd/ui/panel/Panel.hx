@@ -3,7 +3,7 @@ package cgd.ui.panel;
 import cgd.ui.panel.PanelStyles.PanelHAlign;
 import cgd.ui.panel.PanelStyles.PanelSizing;
 import cgd.ui.panel.PanelStyles.PanelStyle;
-import heaps.coroutine.Future;
+import cgd.coro.Future;
 
 private typedef PanelSlotMetrics = {
     var hasContent:Bool;

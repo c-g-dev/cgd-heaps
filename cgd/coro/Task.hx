@@ -1,4 +1,4 @@
-package coro;
+package cgd.coro;
 
 import ludi.commons.UUID;
 import coro.Future;

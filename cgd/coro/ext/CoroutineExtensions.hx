@@ -1,4 +1,4 @@
-package coro.ext;
+package cgd.coro.ext;
 
 import coro.Coroutine;
 import coro.Future;

@@ -1,4 +1,4 @@
-package coro.macros;
+package cgd.coro.macros;
 
 import coro.Future;
 import haxe.macro.Expr;

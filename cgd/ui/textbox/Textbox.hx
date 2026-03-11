@@ -1,6 +1,6 @@
 package cgd.ui.textbox;
 
-import heaps.coroutine.Future;
+import cgd.coro.Future;
 import cgd.ui.SuperText;
 import cgd.ui.SuperTextTypewriter;
 import cgd.ui.SuperTextTypewriter.SuperTextTypewriterOnFrameState;

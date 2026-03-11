@@ -1,4 +1,5 @@
 -lib format
 -lib hlsdl
+-lib ludi-commons
 --macro hxd.res.ScopedRes.install()
 -D cgdheaps
