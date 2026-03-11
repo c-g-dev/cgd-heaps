@@ -18,6 +18,29 @@ This requires a full overhaul of the internals of the heaps.io Resource system a
 
 Heaps.io objects can only do on-frame processing via sync(). In this fork, Objects now have a dedicated .update() method that is called every frame. If an object is disabled, then the update() of its children is not called. The Scene is the root of all update() calls.
 
+## Preview CLI
+
+You can launch a quick preview window for an `h2d.Object` class from a project that depends on this library:
+
+```bash
+haxelib run cgdheaps preview <module>
+```
+
+Examples:
+
+```bash
+haxelib run cgdheaps preview cgd.debug.TelemetryView
+haxelib run cgdheaps preview TelemetryView
+```
+
+### How module launch works
+
+- If the target class defines `static function __launch__(app:hxd.App):Void`, the preview runner calls it and skips automatic instantiation.
+- Otherwise the runner uses constructor fallback:
+  - required constructor args are passed as `null`
+  - optional constructor args are omitted
+- If the created object has no parent, it is automatically added to `app.s2d`.
+
 ## Planned features
 
 - Fix the Graphics line rendering (heaps.io has had open PRs for years that fix these issues but they never get merged)

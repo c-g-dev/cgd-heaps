@@ -1,0 +1,19 @@
+{
+  "name": "cgdheaps",
+  "url": "https://github.com/HaxeFoundation/cgd-heaps",
+  "license": "MIT",
+  "description": "A Heaps.io fork with scoped resource loading, update-tick enhancements, and preview CLI tooling.",
+  "version": "0.0.1",
+  "releasenote": "Added haxelib manifest for CLI entrypoint support.",
+  "tags": [
+    "haxe",
+    "heaps",
+    "cli"
+  ],
+  "classPath": "",
+  "dependencies": {
+    "format": "",
+    "hlsdl": ""
+  },
+  "main": "Run"
+}

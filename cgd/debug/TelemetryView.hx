@@ -10,6 +10,7 @@ class TelemetryView extends h2d.Object {
     var label:h2d.Text;
     var elapsed:Float = 0.0;
 
+
     public function new(scene:h2d.Scene, ?parent:h2d.Object, ?font:h2d.Font) {
         super(parent == null ? scene : parent);
         this.scene = scene;
@@ -118,6 +119,10 @@ class TelemetryView extends h2d.Object {
         #else
         return null;
         #end
+    }
+
+    public static function __launch__(app:hxd.App):Void {
+        new TelemetryView(app.s2d, app.s2d);
     }
 
 }
