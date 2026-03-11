@@ -1,0 +1,38 @@
+package coro;
+
+import coro.Coroutine;
+
+import coro.Coroutine.CoroutineContext;
+import coro.Coroutine.CoroutineObject;
+import coro.Coroutine.FrameYield;
+
+
+class Sequence extends CoroutineObject {
+	var children:Array<Coroutine> = [];
+
+	public function new(?coros:Array<Coroutine>) {
+		super();
+		if (coros != null) {
+			for (coro in coros) {
+				add(coro);
+			}
+		}
+	}
+
+	public function add(coro:Coroutine):Void {
+		coro.context().runManually = true;
+		children.push(coro);
+	}
+
+	private function onFrame(ctx:CoroutineContext):FrameYield {
+		for (child in children) {
+			if (child.context().isComplete)
+				continue;
+			var res = child.context().invoke();
+			if (child.context().isComplete)
+				return WaitNextFrame;
+			return res;
+		}
+		return Stop;
+	}
+}
