@@ -147,7 +147,7 @@ class ManualEdit extends h2d.Object {
 		if (target == null || mode == MODE_IDLE) return;
 
 		if (mode == MODE_MOVE) {
-			trace('move: ${mx}, ${my}');
+			trace('move: ${mx}, ${my} ${lastDragX}, ${lastDragY}');
 			var dx = mx - lastDragX;
 			var dy = my - lastDragY;
 			lastDragX = mx;
@@ -155,6 +155,7 @@ class ManualEdit extends h2d.Object {
 			if (target.parent != null) {
 				var a = target.parent.globalToLocal(new Point(0, 0));
 				var b = target.parent.globalToLocal(new Point(dx, dy));
+				trace('move: ${dx}, ${dy} ${a.x}, ${a.y} ${b.x}, ${b.y}');
 				target.x += b.x - a.x;
 				target.y += b.y - a.y;
 			} else {
