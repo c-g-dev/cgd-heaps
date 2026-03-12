@@ -9,11 +9,9 @@ import cgd.debug.dashboard.server.endpoints.ServeUI;
 import h2d.Object;
 import h2d.Scene;
 import haxe.Json;
-import haxe.io.Path;
 import StringBuf;
 import haxe.io.Bytes;
 import StringTools;
-import sys.FileSystem;
 import sys.net.Host;
 import sys.net.Socket;
 import sys.thread.Thread;
@@ -48,7 +46,6 @@ class HeapsDebugServer {
     static inline var MAX_HEADER_BYTES:Int = 64 * 1024;
     static var instance: HeapsDebugServer;
     static var routes: Map<String, IHeapsDebugEndpoint> = new Map();
-    static var uiAssetDir: String = "cgd/debug/dashboard/ui/bin";
 
     static var appRef: hxd.App;
 
@@ -99,75 +96,6 @@ class HeapsDebugServer {
         return lastScene2DRegistry;
     }
 
-    public static inline function getUiAssetDir(): String {
-        return uiAssetDir;
-    }
-
-    public static inline function setUiAssetDir(path: String): Void {
-        uiAssetDir = path;
-    }
-
-    public static inline function uiAssetPath(fileName: String): String {
-        return uiAssetDir + "/" + fileName;
-    }
-
-    public static function resolveUiAssetPath(fileName: String): Null<String> {
-        var normalizedFileName = normalizePath(fileName);
-        var candidates = getUiAssetSearchDirs();
-        for (base in candidates) {
-            var resolved = normalizePath(base + "/" + normalizedFileName);
-            if (FileSystem.exists(resolved) && !FileSystem.isDirectory(resolved)) {
-                return resolved;
-            }
-        }
-        return null;
-    }
-
-    public static function describeUiAssetLookup(fileName: String): String {
-        var lines = [
-            "Missing dashboard asset: " + fileName,
-            "Checked paths:"
-        ];
-        var normalizedFileName = normalizePath(fileName);
-        for (base in getUiAssetSearchDirs()) {
-            lines.push("- " + normalizePath(base + "/" + normalizedFileName));
-        }
-        return lines.join("\n");
-    }
-
-    static function getUiAssetSearchDirs(): Array<String> {
-        var dirs = [
-            uiAssetDir,
-            "cgd/debug/dashboard/ui/bin",
-            "./cgd/debug/dashboard/ui/bin",
-            "../cgd/debug/dashboard/ui/bin",
-            "../../cgd/debug/dashboard/ui/bin"
-        ];
-
-        var exeDir = Path.directory(Sys.programPath());
-        if (exeDir != null && exeDir != "") {
-            dirs.push(exeDir + "/cgd/debug/dashboard/ui/bin");
-            dirs.push(exeDir + "/../cgd/debug/dashboard/ui/bin");
-            dirs.push(exeDir + "/../../cgd/debug/dashboard/ui/bin");
-        }
-
-        var out = new Array<String>();
-        var seen = new Map<String, Bool>();
-        for (dir in dirs) {
-            var normalized = normalizePath(dir);
-            if (!seen.exists(normalized)) {
-                seen.set(normalized, true);
-                out.push(normalized);
-            }
-        }
-        return out;
-    }
-
-    static inline function normalizePath(path: String): String {
-        return Path.normalize(path.split("\\").join("/"));
-    }
-
-    
     function start(app: hxd.App): Void {
         initDefaultEndpoints();
 

@@ -1,10 +1,10 @@
 package cgd.debug.dashboard.server.endpoints;
 
 import cgd.debug.dashboard.HeapsDebugServer;
+import cgd.debug.dashboard.server.EmbeddedAssets;
 import cgd.debug.dashboard.HeapsDebugServer.IHeapsDebugEndpoint;
 import cgd.debug.dashboard.HeapsDebugServer.HeapsDebugRequest;
 import cgd.debug.dashboard.HeapsDebugServer.HeapsDebugResponse;
-import sys.io.File;
 
 class ServeUI implements IHeapsDebugEndpoint {
 	public var method(default, null): String = "GET";
@@ -17,15 +17,7 @@ class ServeUI implements IHeapsDebugEndpoint {
 	public function new() {}
 
 	public function handle(server: HeapsDebugServer, req: HeapsDebugRequest): HeapsDebugResponse {
-		var uiPath = HeapsDebugServer.resolveUiAssetPath("ui.js");
-		if (uiPath == null) {
-			return {
-				status: 500,
-				contentType: "text/plain; charset=utf-8",
-				body: HeapsDebugServer.describeUiAssetLookup("ui.js")
-			};
-		}
-		var js = File.getContent(uiPath);
+		var js = EmbeddedAssets.uiJs;
 		return {
 			status: 200,
 			contentType: "application/javascript; charset=utf-8",
