@@ -20,21 +20,23 @@ class ManualEdit extends h2d.Object {
 	static inline var MODE_SCALE = 2;
 	static inline var MODE_ROTATE = 3;
 
-	var moveOffsetX:Float = 0;
-	var moveOffsetY:Float = 0;
-
+	var lastDragX:Float = 0;
+	var lastDragY:Float = 0;
 	var dragStartScaleX:Float = 1;
 	var dragStartScaleY:Float = 1;
-	var dragStartV:Point;
-
-	var dragOriginX:Float = 0;
-	var dragOriginY:Float = 0;
 	var dragStartRotation:Float = 0;
 	var dragStartAngle:Float = 0;
+	var dragOriginX:Float = 0;
+	var dragOriginY:Float = 0;
+	var dragCornerDx:Float = 0;
+	var dragCornerDy:Float = 0;
+	var dragHandleOffsetX:Float = 0;
+	var dragHandleOffsetY:Float = 0;
 
 	static inline var HANDLE_SIZE:Float = 8;
+	static inline var HANDLE_HIT:Float = 10;
 	static inline var ROTATE_OFFSET:Float = 30;
-	static inline var HIT_RADIUS:Float = 12;
+	static inline var ROTATE_HIT:Float = 12;
 
 	public function new() {
 		super();
@@ -80,15 +82,11 @@ class ManualEdit extends h2d.Object {
 
 	function handlePush(mx:Float, my:Float):Void {
 		if (target == null) return;
-		var scene = target.getScene();
-		if (scene == null) scene = HeapsDebugServer.getApp().s2d;
-		var bounds = target.getBounds(scene);
+		var bounds = target.getBounds();
 
 		var rcx = (bounds.xMin + bounds.xMax) * 0.5;
 		var rcy = bounds.yMin - ROTATE_OFFSET;
-		var hitRadius2 = HIT_RADIUS * HIT_RADIUS;
-
-		if (distSq(mx, my, rcx, rcy) < hitRadius2) {
+		if (distSq(mx, my, rcx, rcy) < ROTATE_HIT * ROTATE_HIT) {
 			mode = MODE_ROTATE;
 			var origin = target.localToGlobal(new Point(0, 0));
 			dragOriginX = origin.x;
@@ -98,27 +96,47 @@ class ManualEdit extends h2d.Object {
 			return;
 		}
 
-		if (distSq(mx, my, bounds.xMin, bounds.yMin) < hitRadius2
-			|| distSq(mx, my, bounds.xMax, bounds.yMin) < hitRadius2
-			|| distSq(mx, my, bounds.xMin, bounds.yMax) < hitRadius2
-			|| distSq(mx, my, bounds.xMax, bounds.yMax) < hitRadius2) {
+		var cornerX:Float = 0;
+		var cornerY:Float = 0;
+		var hitCorner = false;
+		var hh = HANDLE_HIT;
+
+		if (Math.abs(mx - bounds.xMin) < hh && Math.abs(my - bounds.yMin) < hh) {
+			cornerX = bounds.xMin;
+			cornerY = bounds.yMin;
+			hitCorner = true;
+		} else if (Math.abs(mx - bounds.xMax) < hh && Math.abs(my - bounds.yMin) < hh) {
+			cornerX = bounds.xMax;
+			cornerY = bounds.yMin;
+			hitCorner = true;
+		} else if (Math.abs(mx - bounds.xMin) < hh && Math.abs(my - bounds.yMax) < hh) {
+			cornerX = bounds.xMin;
+			cornerY = bounds.yMax;
+			hitCorner = true;
+		} else if (Math.abs(mx - bounds.xMax) < hh && Math.abs(my - bounds.yMax) < hh) {
+			cornerX = bounds.xMax;
+			cornerY = bounds.yMax;
+			hitCorner = true;
+		}
+
+		if (hitCorner) {
 			mode = MODE_SCALE;
+			var origin = target.localToGlobal(new Point(0, 0));
+			dragOriginX = origin.x;
+			dragOriginY = origin.y;
+			dragCornerDx = cornerX - dragOriginX;
+			dragCornerDy = cornerY - dragOriginY;
+			dragHandleOffsetX = mx - cornerX;
+			dragHandleOffsetY = my - cornerY;
 			dragStartScaleX = target.scaleX;
 			dragStartScaleY = target.scaleY;
-			dragStartV = getLocalVec(mx, my);
 			return;
 		}
 
 		if (mx >= bounds.xMin && mx <= bounds.xMax && my >= bounds.yMin && my <= bounds.yMax) {
 			mode = MODE_MOVE;
-			if (target.parent != null) {
-				var parentLocal = target.parent.globalToLocal(new Point(mx, my));
-				moveOffsetX = target.x - parentLocal.x;
-				moveOffsetY = target.y - parentLocal.y;
-			} else {
-				moveOffsetX = target.x - mx;
-				moveOffsetY = target.y - my;
-			}
+			lastDragX = mx;
+			lastDragY = my;
 			return;
 		}
 	}
@@ -127,41 +145,28 @@ class ManualEdit extends h2d.Object {
 		if (target == null || mode == MODE_IDLE) return;
 
 		if (mode == MODE_MOVE) {
+			var dx = mx - lastDragX;
+			var dy = my - lastDragY;
+			lastDragX = mx;
+			lastDragY = my;
 			if (target.parent != null) {
-				var parentLocal = target.parent.globalToLocal(new Point(mx, my));
-				target.x = parentLocal.x + moveOffsetX;
-				target.y = parentLocal.y + moveOffsetY;
+				var a = target.parent.globalToLocal(new Point(0, 0));
+				var b = target.parent.globalToLocal(new Point(dx, dy));
+				target.x += b.x - a.x;
+				target.y += b.y - a.y;
 			} else {
-				target.x = mx + moveOffsetX;
-				target.y = my + moveOffsetY;
+				target.x += dx;
+				target.y += dy;
 			}
 		} else if (mode == MODE_SCALE) {
-			var curV = getLocalVec(mx, my);
-			// Avoid division by zero
-			if (Math.abs(dragStartV.x) > 1e-5) 
-				target.scaleX = dragStartScaleX * (curV.x / dragStartV.x);
-			if (Math.abs(dragStartV.y) > 1e-5) 
-				target.scaleY = dragStartScaleY * (curV.y / dragStartV.y);
+			var effectiveX = mx - dragHandleOffsetX - dragOriginX;
+			var effectiveY = my - dragHandleOffsetY - dragOriginY;
+			if (Math.abs(dragCornerDx) > 1) target.scaleX = dragStartScaleX * (effectiveX / dragCornerDx);
+			if (Math.abs(dragCornerDy) > 1) target.scaleY = dragStartScaleY * (effectiveY / dragCornerDy);
 		} else if (mode == MODE_ROTATE) {
 			var curAngle = Math.atan2(my - dragOriginY, mx - dragOriginX);
 			target.rotation = dragStartRotation + (curAngle - dragStartAngle);
 		}
-	}
-
-	function getLocalVec(mx:Float, my:Float):Point {
-		var p = new Point(mx, my);
-		if (target.parent != null) {
-			p = target.parent.globalToLocal(p);
-		}
-		var dx = p.x - target.x;
-		var dy = p.y - target.y;
-		
-		// De-rotate by target rotation to align with local axes
-		var r = -target.rotation;
-		var c = Math.cos(r);
-		var s = Math.sin(r);
-		
-		return new Point(dx * c - dy * s, dx * s + dy * c);
 	}
 
 	static inline function distSq(x1:Float, y1:Float, x2:Float, y2:Float):Float {
@@ -182,9 +187,13 @@ class ManualEdit extends h2d.Object {
 	function redraw():Void {
 		if (target == null) return;
 
-		var scene = target.getScene();
-		if (scene == null) scene = HeapsDebugServer.getApp().s2d;
-		var bounds = target.getBounds(scene);
+		var bounds:Bounds;
+		if (target == this.getScene()) {
+			var scene:h2d.Scene = cast target;
+			bounds = Bounds.fromValues(0, 0, scene.width, scene.height);
+		} else {
+			bounds = target.getBounds();
+		}
 
 		gfx.clear();
 		this.x = 0;
