@@ -23,14 +23,26 @@ Heaps.io objects can only do on-frame processing via sync(). In this fork, Objec
 You can launch a quick preview window for an `h2d.Object` class from a project that depends on this library:
 
 ```bash
-haxelib run cgdheaps preview <module>
+cgdheaps preview <module>
 ```
 
 Examples:
 
 ```bash
-haxelib run cgdheaps preview cgd.debug.TelemetryView
-haxelib run cgdheaps preview TelemetryView
+cgdheaps preview cgd.debug.TelemetryView
+cgdheaps preview TelemetryView
+```
+
+Install the `cgdheaps` command:
+
+```bash
+bash scripts/install-cli.sh
+```
+
+On Windows (Command Prompt):
+
+```bat
+scripts\install-cli.cmd
 ```
 
 ### How module launch works

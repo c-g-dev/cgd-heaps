@@ -52,6 +52,7 @@ class PreviewMain {
     static function selectHxml():String {
         var hxmlFiles = [];
         for( entry in FileSystem.readDirectory(".") ) {
+            trace(entry);
             if( !StringTools.endsWith(entry, ".hxml") ) {
                 continue;
             }

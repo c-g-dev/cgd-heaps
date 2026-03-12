@@ -20,7 +20,7 @@ class Run {
         switch( command ) {
             case "preview":
                 if( invocation.args.length < 2 ) {
-                    throw "Usage: haxelib run cgdheaps preview <module>";
+                    throw "Usage: cgdheaps preview <module>";
                 }
                 cgd.cli.preview.PreviewMain.run(invocation.args[1], invocation.callerCwd, invocation.libraryRoot);
             default:
@@ -33,7 +33,7 @@ class Run {
         var libraryRoot = normalizeDirectory(Sys.getCwd());
 
         var callerCwd = libraryRoot;
-        if( Sys.getEnv("HAXELIB_RUN") == "1" && args.length > 0 ) {
+        if( Sys.getEnv("CGDHEAPS_RUN") == "1" && args.length > 0 ) {
             callerCwd = normalizeDirectory(args.pop());
         }
 
@@ -65,7 +65,8 @@ class Run {
         Sys.println("cgdheaps command line tools");
         Sys.println("");
         Sys.println("Usage:");
-        Sys.println("  haxelib run cgdheaps preview <module>");
+        Sys.println("  cgdheaps preview <module>");
+        Sys.println("  haxe --run Run.hx preview <module>");
     }
 
 }
