@@ -58,6 +58,7 @@ class GetSceneDom2D implements IHeapsDebugEndpoint {
                 y: o.y,
                 sx: o.scaleX,
                 sy: o.scaleY,
+                rotation: o.rotation,
                 alpha: o.alpha,
                 visible: o.visible,
                 children: []

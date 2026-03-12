@@ -72,45 +72,25 @@ const statusEl = document.getElementById('status');
 const btn = document.getElementById('refresh');
 const auto = document.getElementById('auto');
 let timer = null;
+let manualEditPollTimer = null;
+let fieldInputs = {};
 
 const modal = document.getElementById('modal');
 const modalBody = document.getElementById('modalBody');
 const modalClose = document.getElementById('modalClose');
-let manualEditObjectId = null;
-let modalNodeId = null;
-let manualEditRefreshTimer = null;
-
-function stopManualEditRefresh(){
-  if (manualEditRefreshTimer !== null) {
-    clearInterval(manualEditRefreshTimer);
-    manualEditRefreshTimer = null;
-  }
-}
-
-function startManualEditRefresh(){
-  if (manualEditRefreshTimer !== null) return;
-  manualEditRefreshTimer = setInterval(() => {
-    if (!manualEditObjectId) {
-      stopManualEditRefresh();
-      return;
-    }
-    fetchDom(true);
-  }, 120);
-}
 
 function showModalForNode(node){
   const {children, ...props} = node;
-  modalNodeId = props.id || null;
-  
+  fieldInputs = {};
+
   const wrap = document.createElement('div');
-  
+
   const h = document.createElement('div');
   h.textContent = `${props.type || 'Object'} — ${props.id || ''}`;
   h.style.marginBottom = '8px';
   h.style.color = '#93c5fd';
   wrap.appendChild(h);
 
-  
   const actions = document.createElement('div');
   actions.style.display = 'flex';
   actions.style.gap = '8px';
@@ -129,8 +109,6 @@ function showModalForNode(node){
   clearBtn.className = 'apply';
   clearBtn.textContent = 'Clear highlight';
   clearBtn.addEventListener('click', () => {
-    manualEditObjectId = null;
-    stopManualEditRefresh();
     fetch('/highlight/clear', { method: 'POST' });
   });
 
@@ -138,47 +116,6 @@ function showModalForNode(node){
   actions.appendChild(clearBtn);
   wrap.appendChild(actions);
 
-  const manualRow = document.createElement('div');
-  manualRow.className = 'field-row';
-  const manualLabel = document.createElement('label');
-  manualLabel.textContent = 'Manual Edit';
-  const manualInput = document.createElement('input');
-  manualInput.type = 'checkbox';
-  manualInput.disabled = !props.id;
-  manualInput.checked = !!props.id && manualEditObjectId === props.id;
-  manualInput.addEventListener('change', () => {
-    if (!props.id) {
-      manualInput.checked = false;
-      return;
-    }
-    const enabled = manualInput.checked;
-    const body = enabled ? String(props.id) : '';
-    fetch('/manualedit', {
-      method: 'POST',
-      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-      body
-    }).then((r) => {
-      if (!r.ok) {
-        manualInput.checked = !enabled;
-        return;
-      }
-      manualEditObjectId = enabled ? props.id : null;
-      if (manualEditObjectId) startManualEditRefresh();
-      else stopManualEditRefresh();
-    });
-  });
-  manualRow.appendChild(manualLabel);
-  manualRow.appendChild(manualInput);
-  wrap.appendChild(manualRow);
-
-  const manualHint = document.createElement('div');
-  manualHint.style.margin = '4px 0 8px 0';
-  manualHint.style.color = '#94a3b8';
-  manualHint.style.fontSize = '12px';
-  manualHint.textContent = 'In the game window: drag inside the box to move, drag the bottom-right square to scale.';
-  wrap.appendChild(manualHint);
-
-  
   const fieldMap = { sx: 'scaleX', sy: 'scaleY' };
 
   function numberField(label, field){
@@ -190,6 +127,7 @@ function showModalForNode(node){
     input.type = 'number';
     input.step = '0.1';
     input.value = typeof props[field] === 'number' ? props[field] : 0;
+    fieldInputs[field] = input;
     const btn = document.createElement('button');
     btn.className = 'apply';
     btn.textContent = 'Apply';
@@ -200,7 +138,6 @@ function showModalForNode(node){
       if (window.HDS && typeof window.HDS.updateObjectField === 'function') {
         window.HDS.updateObjectField(props.id, sendField, v);
       }
-      
       setTimeout(fetchDom, 50);
     };
     btn.addEventListener('click', send);
@@ -211,7 +148,6 @@ function showModalForNode(node){
     return row;
   }
 
-  
   function boolField(label, field){
     const row = document.createElement('div');
     row.className = 'field-row';
@@ -235,10 +171,31 @@ function showModalForNode(node){
   wrap.appendChild(numberField('y', 'y'));
   wrap.appendChild(numberField('scaleX', 'sx'));
   wrap.appendChild(numberField('scaleY', 'sy'));
+  wrap.appendChild(numberField('rotation', 'rotation'));
   wrap.appendChild(numberField('alpha', 'alpha'));
   wrap.appendChild(boolField('visible', 'visible'));
 
-  
+  const meRow = document.createElement('div');
+  meRow.className = 'field-row';
+  meRow.style.marginTop = '6px';
+  const meLabel = document.createElement('label');
+  meLabel.textContent = 'Manual Edit';
+  const meCheck = document.createElement('input');
+  meCheck.type = 'checkbox';
+  meCheck.disabled = !props.id;
+  meCheck.addEventListener('change', () => {
+    if (meCheck.checked) {
+      fetch('/manualedit', { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: String(props.id) });
+      startManualEditPoll();
+    } else {
+      fetch('/manualedit', { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: '' });
+      stopManualEditPoll();
+    }
+  });
+  meRow.appendChild(meLabel);
+  meRow.appendChild(meCheck);
+  wrap.appendChild(meRow);
+
   const pre = document.createElement('pre');
   pre.textContent = JSON.stringify(props, null, 2);
   pre.style.marginTop = '12px';
@@ -249,9 +206,33 @@ function showModalForNode(node){
   modal.style.display = 'flex';
 }
 
+function startManualEditPoll(){
+  stopManualEditPoll();
+  manualEditPollTimer = setInterval(() => {
+    fetch('/manualedit/transform').then(r => r.json()).then(d => {
+      if (!d.active) return;
+      const keys = ['x','y','sx','sy','rotation'];
+      for (const k of keys) {
+        const inp = fieldInputs[k];
+        if (inp && document.activeElement !== inp && d[k] !== undefined) {
+          inp.value = Math.round(d[k] * 100) / 100;
+        }
+      }
+    });
+  }, 200);
+}
+
+function stopManualEditPoll(){
+  if (manualEditPollTimer != null) {
+    clearInterval(manualEditPollTimer);
+    manualEditPollTimer = null;
+  }
+}
+
 function hideModal(){
   modal.style.display = 'none';
-  modalNodeId = null;
+  stopManualEditPoll();
+  fetch('/manualedit', { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: '' });
 }
 modal.addEventListener('click', (e) => {
   if (e.target === modal) hideModal();
@@ -310,35 +291,16 @@ function renderTree(data){
   treeEl.appendChild(buildNode(data));
 }
 
-function findNodeById(node, id){
-  if (!node || !id) return null;
-  if (node.id === id) return node;
-  if (!Array.isArray(node.children)) return null;
-  for (const child of node.children){
-    const found = findNodeById(child, id);
-    if (found) return found;
-  }
-  return null;
-}
-
-function refreshModalNode(data){
-  if (modal.style.display !== 'flex' || !modalNodeId) return;
-  const fresh = findNodeById(data, modalNodeId);
-  if (!fresh) return;
-  showModalForNode(fresh);
-}
-
-function fetchDom(silent = false){
-  if (!silent) statusEl.textContent = 'Loading...';
+function fetchDom(){
+  statusEl.textContent = 'Loading...';
   fetch('/scene/dom2d').then(r => r.json()).then(d => {
     renderTree(d);
-    refreshModalNode(d);
-    if (!silent) statusEl.textContent = 'OK';
+    statusEl.textContent = 'OK';
   });
 }
-btn.addEventListener('click', () => fetchDom());
+btn.addEventListener('click', fetchDom);
 auto.addEventListener('change', () => {
-  if (auto.checked) { timer = setInterval(() => fetchDom(true), 1000); fetchDom(); }
+  if (auto.checked) { timer = setInterval(fetchDom, 1000); fetchDom(); }
   else { clearInterval(timer); timer = null; }
 });
 window.addEventListener('load', fetchDom);

@@ -4,24 +4,24 @@ import cgd.debug.dashboard.HeapsDebugServer;
 import cgd.debug.dashboard.HeapsDebugServer.IHeapsDebugEndpoint;
 import cgd.debug.dashboard.HeapsDebugServer.HeapsDebugRequest;
 import cgd.debug.dashboard.HeapsDebugServer.HeapsDebugResponse;
-import cgd.debug.dashboard.util.Highlighter;
+import cgd.debug.dashboard.util.ManualEdit;
 import cgd.debug.dashboard.util.RunOnUIThread;
 
 class ManualEditObject implements IHeapsDebugEndpoint {
-	public var method(default, null): String = "POST";
-	public var path(default, null): String = "/manualedit";
+	public var method(default, null):String = "POST";
+	public var path(default, null):String = "/manualedit";
 
-	public static function register(): Void {
+	public static function register():Void {
 		HeapsDebugServer.registerEndpoint(new ManualEditObject());
 	}
 
 	public function new() {}
 
-	public function handle(server: HeapsDebugServer, req: HeapsDebugRequest): HeapsDebugResponse {
+	public function handle(server:HeapsDebugServer, req:HeapsDebugRequest):HeapsDebugResponse {
 		var id = req.body == null ? "" : StringTools.trim(req.body);
 		if (id == "") {
 			HeapsDebugServer.getApp().s2d.addChild(new RunOnUIThread(() -> {
-				Highlighter.setManualEdit(null);
+				ManualEdit.setTarget(null);
 			}));
 			return {
 				status: 200,
@@ -41,7 +41,7 @@ class ManualEditObject implements IHeapsDebugEndpoint {
 		}
 
 		HeapsDebugServer.getApp().s2d.addChild(new RunOnUIThread(() -> {
-			Highlighter.setManualEdit(target);
+			ManualEdit.setTarget(target);
 		}));
 		return {
 			status: 200,
@@ -50,4 +50,3 @@ class ManualEditObject implements IHeapsDebugEndpoint {
 		};
 	}
 }
-
