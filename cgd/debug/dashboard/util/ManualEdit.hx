@@ -45,6 +45,7 @@ class ManualEdit extends h2d.Object {
 		overlay = new Interactive(1, 1, this);
 		overlay.cursor = Default;
 		overlay.onPush = function(e:hxd.Event) {
+			trace('push: ${e.relX}, ${e.relY}');
 			handlePush(e.relX, e.relY);
 		};
 		overlay.onRelease = function(e:hxd.Event) {
@@ -133,6 +134,7 @@ class ManualEdit extends h2d.Object {
 			return;
 		}
 
+		trace('check move bounds: ${bounds.xMin}, ${bounds.xMax}, ${bounds.yMin}, ${bounds.yMax}');
 		if (mx >= bounds.xMin && mx <= bounds.xMax && my >= bounds.yMin && my <= bounds.yMax) {
 			mode = MODE_MOVE;
 			lastDragX = mx;
@@ -145,6 +147,7 @@ class ManualEdit extends h2d.Object {
 		if (target == null || mode == MODE_IDLE) return;
 
 		if (mode == MODE_MOVE) {
+			trace('move: ${mx}, ${my}');
 			var dx = mx - lastDragX;
 			var dy = my - lastDragY;
 			lastDragX = mx;
