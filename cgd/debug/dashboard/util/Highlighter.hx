@@ -29,8 +29,8 @@ class Highlighter extends h2d.Object {
 	var manualEditEnabled: Bool = false;
 	var editMode: ManualEditMode = Idle;
 
-	var dragStartPointerParent: Point;
 	var dragStartPointerScene: Point;
+	var dragStartOriginScene: Point;
 	var dragStartObjectX: Float = 0.0;
 	var dragStartObjectY: Float = 0.0;
 	var dragStartScaleX: Float = 1.0;
@@ -47,8 +47,8 @@ class Highlighter extends h2d.Object {
 		hitArea.propagateEvents = true;
 		hitArea.cursor = hxd.Cursor.Default;
 		hitArea.onPush = onHitAreaPush;
-		dragStartPointerParent = new Point();
 		dragStartPointerScene = new Point();
+		dragStartOriginScene = new Point();
 		dragStartBounds = new Bounds();
 		scaleAnchorLocal = new Point();
 		scaleAnchorParent = new Point();
@@ -104,10 +104,10 @@ class Highlighter extends h2d.Object {
 
 	function getTargetBounds(): Bounds {
 		if (target == getScene()) {
-			var scene = cast target:h2d.Scene;
+			var scene: h2d.Scene = cast target;
 			bounds = Bounds.fromValues(0, 0, scene.width, scene.height);
 		} else {
-			bounds = target.getBounds(bounds);
+			bounds = target.getBounds(null, bounds);
 		}
 		return bounds;
 	}
@@ -135,9 +135,10 @@ class Highlighter extends h2d.Object {
 	function onHitAreaPush(e: Event): Void {
 		if (!manualEditEnabled || target == null) return;
 		if (e.button != 0) return;
-		var mode = getModeAt(e.relX, e.relY);
+		var scenePoint = captureLocalToScene(e.relX, e.relY);
+		var mode = getModeAt(scenePoint.x, scenePoint.y);
 		if (mode == Idle) return;
-		beginEditing(mode, e.relX, e.relY);
+		beginEditing(mode, scenePoint.x, scenePoint.y);
 		hitArea.startCapture(onCaptureEvent, onCaptureCancelled);
 		e.cancel = true;
 		e.propagate = false;
@@ -164,9 +165,11 @@ class Highlighter extends h2d.Object {
 			case Idle:
 				return;
 			case Move:
-				var parentPoint = sceneToParent(sceneX, sceneY);
-				dragStartPointerParent.x = parentPoint.x;
-				dragStartPointerParent.y = parentPoint.y;
+				dragStartPointerScene.x = sceneX;
+				dragStartPointerScene.y = sceneY;
+				var originScene = target.localToGlobal(new Point());
+				dragStartOriginScene.x = originScene.x;
+				dragStartOriginScene.y = originScene.y;
 				dragStartObjectX = target.x;
 				dragStartObjectY = target.y;
 			case Scale:
@@ -197,11 +200,13 @@ class Highlighter extends h2d.Object {
 		}
 		switch (e.kind) {
 			case EMove:
-				updateEditing(e.relX, e.relY);
+				var scenePoint = captureLocalToScene(e.relX, e.relY);
+				updateEditing(scenePoint.x, scenePoint.y);
 				e.cancel = true;
 				e.propagate = false;
 			case ERelease, EReleaseOutside:
-				updateEditing(e.relX, e.relY);
+				var scenePoint = captureLocalToScene(e.relX, e.relY);
+				updateEditing(scenePoint.x, scenePoint.y);
 				stopEditingCapture();
 				e.cancel = true;
 				e.propagate = false;
@@ -224,9 +229,13 @@ class Highlighter extends h2d.Object {
 			case Idle:
 				return;
 			case Move:
-				var parentPoint = sceneToParent(sceneX, sceneY);
-				target.x = dragStartObjectX + (parentPoint.x - dragStartPointerParent.x);
-				target.y = dragStartObjectY + (parentPoint.y - dragStartPointerParent.y);
+				var targetOriginScene = new Point(
+					dragStartOriginScene.x + (sceneX - dragStartPointerScene.x),
+					dragStartOriginScene.y + (sceneY - dragStartPointerScene.y)
+				);
+				var parentPoint = target.parent == null ? targetOriginScene : target.parent.globalToLocal(targetOriginScene);
+				target.x = parentPoint.x;
+				target.y = parentPoint.y;
 			case Scale:
 				var startWidth = dragStartBounds.width;
 				var startHeight = dragStartBounds.height;
@@ -244,9 +253,8 @@ class Highlighter extends h2d.Object {
 		}
 	}
 
-	function sceneToParent(sceneX: Float, sceneY: Float): Point {
-		var point = new Point(sceneX, sceneY);
-		return target.parent == null ? point : target.parent.globalToLocal(point);
+	function captureLocalToScene(localX: Float, localY: Float): Point {
+		return hitArea.localToGlobal(new Point(localX, localY));
 	}
 
 	function localToParent(localX: Float, localY: Float): Point {

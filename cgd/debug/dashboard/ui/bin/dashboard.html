@@ -77,9 +77,30 @@ const modal = document.getElementById('modal');
 const modalBody = document.getElementById('modalBody');
 const modalClose = document.getElementById('modalClose');
 let manualEditObjectId = null;
+let modalNodeId = null;
+let manualEditRefreshTimer = null;
+
+function stopManualEditRefresh(){
+  if (manualEditRefreshTimer !== null) {
+    clearInterval(manualEditRefreshTimer);
+    manualEditRefreshTimer = null;
+  }
+}
+
+function startManualEditRefresh(){
+  if (manualEditRefreshTimer !== null) return;
+  manualEditRefreshTimer = setInterval(() => {
+    if (!manualEditObjectId) {
+      stopManualEditRefresh();
+      return;
+    }
+    fetchDom(true);
+  }, 120);
+}
 
 function showModalForNode(node){
   const {children, ...props} = node;
+  modalNodeId = props.id || null;
   
   const wrap = document.createElement('div');
   
@@ -109,6 +130,7 @@ function showModalForNode(node){
   clearBtn.textContent = 'Clear highlight';
   clearBtn.addEventListener('click', () => {
     manualEditObjectId = null;
+    stopManualEditRefresh();
     fetch('/highlight/clear', { method: 'POST' });
   });
 
@@ -141,6 +163,8 @@ function showModalForNode(node){
         return;
       }
       manualEditObjectId = enabled ? props.id : null;
+      if (manualEditObjectId) startManualEditRefresh();
+      else stopManualEditRefresh();
     });
   });
   manualRow.appendChild(manualLabel);
@@ -227,6 +251,7 @@ function showModalForNode(node){
 
 function hideModal(){
   modal.style.display = 'none';
+  modalNodeId = null;
 }
 modal.addEventListener('click', (e) => {
   if (e.target === modal) hideModal();
@@ -285,16 +310,35 @@ function renderTree(data){
   treeEl.appendChild(buildNode(data));
 }
 
-function fetchDom(){
-  statusEl.textContent = 'Loading...';
+function findNodeById(node, id){
+  if (!node || !id) return null;
+  if (node.id === id) return node;
+  if (!Array.isArray(node.children)) return null;
+  for (const child of node.children){
+    const found = findNodeById(child, id);
+    if (found) return found;
+  }
+  return null;
+}
+
+function refreshModalNode(data){
+  if (modal.style.display !== 'flex' || !modalNodeId) return;
+  const fresh = findNodeById(data, modalNodeId);
+  if (!fresh) return;
+  showModalForNode(fresh);
+}
+
+function fetchDom(silent = false){
+  if (!silent) statusEl.textContent = 'Loading...';
   fetch('/scene/dom2d').then(r => r.json()).then(d => {
     renderTree(d);
-    statusEl.textContent = 'OK';
+    refreshModalNode(d);
+    if (!silent) statusEl.textContent = 'OK';
   });
 }
-btn.addEventListener('click', fetchDom);
+btn.addEventListener('click', () => fetchDom());
 auto.addEventListener('change', () => {
-  if (auto.checked) { timer = setInterval(fetchDom, 1000); fetchDom(); }
+  if (auto.checked) { timer = setInterval(() => fetchDom(true), 1000); fetchDom(); }
   else { clearInterval(timer); timer = null; }
 });
 window.addEventListener('load', fetchDom);
