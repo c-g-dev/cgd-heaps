@@ -17,7 +17,15 @@ class Dashboard implements IHeapsDebugEndpoint {
 	public function new() {}
 
 	public function handle(server: HeapsDebugServer, req: HeapsDebugRequest): HeapsDebugResponse {
-		var html = File.getContent(HeapsDebugServer.uiAssetPath("dashboard.html"));
+		var dashboardPath = HeapsDebugServer.resolveUiAssetPath("dashboard.html");
+		if (dashboardPath == null) {
+			return {
+				status: 500,
+				contentType: "text/plain; charset=utf-8",
+				body: HeapsDebugServer.describeUiAssetLookup("dashboard.html")
+			};
+		}
+		var html = File.getContent(dashboardPath);
 		
 		if (html.indexOf("/ui.js") == -1) {
 			var marker = "</body>";

@@ -17,7 +17,15 @@ class ServeUI implements IHeapsDebugEndpoint {
 	public function new() {}
 
 	public function handle(server: HeapsDebugServer, req: HeapsDebugRequest): HeapsDebugResponse {
-		var js = File.getContent(HeapsDebugServer.uiAssetPath("ui.js"));
+		var uiPath = HeapsDebugServer.resolveUiAssetPath("ui.js");
+		if (uiPath == null) {
+			return {
+				status: 500,
+				contentType: "text/plain; charset=utf-8",
+				body: HeapsDebugServer.describeUiAssetLookup("ui.js")
+			};
+		}
+		var js = File.getContent(uiPath);
 		return {
 			status: 200,
 			contentType: "application/javascript; charset=utf-8",
