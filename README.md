@@ -39,7 +39,7 @@ Install the `cgdheaps` command:
 bash scripts/install-cli.sh
 ```
 
-On Windows (Command Prompt):
+On Windows:
 
 ```bat
 scripts\install-cli.cmd
