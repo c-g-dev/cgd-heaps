@@ -76,6 +76,7 @@ let timer = null;
 const modal = document.getElementById('modal');
 const modalBody = document.getElementById('modalBody');
 const modalClose = document.getElementById('modalClose');
+let manualEditObjectId = null;
 
 function showModalForNode(node){
   const {children, ...props} = node;
@@ -107,12 +108,51 @@ function showModalForNode(node){
   clearBtn.className = 'apply';
   clearBtn.textContent = 'Clear highlight';
   clearBtn.addEventListener('click', () => {
+    manualEditObjectId = null;
     fetch('/highlight/clear', { method: 'POST' });
   });
 
   actions.appendChild(highlightBtn);
   actions.appendChild(clearBtn);
   wrap.appendChild(actions);
+
+  const manualRow = document.createElement('div');
+  manualRow.className = 'field-row';
+  const manualLabel = document.createElement('label');
+  manualLabel.textContent = 'Manual Edit';
+  const manualInput = document.createElement('input');
+  manualInput.type = 'checkbox';
+  manualInput.disabled = !props.id;
+  manualInput.checked = !!props.id && manualEditObjectId === props.id;
+  manualInput.addEventListener('change', () => {
+    if (!props.id) {
+      manualInput.checked = false;
+      return;
+    }
+    const enabled = manualInput.checked;
+    const body = enabled ? String(props.id) : '';
+    fetch('/manualedit', {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body
+    }).then((r) => {
+      if (!r.ok) {
+        manualInput.checked = !enabled;
+        return;
+      }
+      manualEditObjectId = enabled ? props.id : null;
+    });
+  });
+  manualRow.appendChild(manualLabel);
+  manualRow.appendChild(manualInput);
+  wrap.appendChild(manualRow);
+
+  const manualHint = document.createElement('div');
+  manualHint.style.margin = '4px 0 8px 0';
+  manualHint.style.color = '#94a3b8';
+  manualHint.style.fontSize = '12px';
+  manualHint.textContent = 'In the game window: drag inside the box to move, drag the bottom-right square to scale.';
+  wrap.appendChild(manualHint);
 
   
   const fieldMap = { sx: 'scaleX', sy: 'scaleY' };

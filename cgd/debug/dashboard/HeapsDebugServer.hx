@@ -5,6 +5,7 @@ import cgd.debug.dashboard.server.endpoints.Dashboard;
 import cgd.debug.dashboard.server.endpoints.EvalHScript;
 import cgd.debug.dashboard.server.endpoints.GetSceneDom2D;
 import cgd.debug.dashboard.server.endpoints.HighlightObject;
+import cgd.debug.dashboard.server.endpoints.ManualEditObject;
 import cgd.debug.dashboard.server.endpoints.ServeUI;
 import h2d.Object;
 import h2d.Scene;
@@ -339,6 +340,7 @@ class HeapsDebugServer {
         ServeUI.register();
         HighlightObject.register();
         ClearHighlight.register();
+        ManualEditObject.register();
     }
 }
 
