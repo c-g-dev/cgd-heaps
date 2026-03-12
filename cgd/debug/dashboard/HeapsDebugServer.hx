@@ -1,6 +1,7 @@
 package cgd.debug.dashboard;
 
 import cgd.debug.dashboard.server.endpoints.ClearHighlight;
+import cgd.debug.dashboard.server.endpoints.AddChildNode;
 import cgd.debug.dashboard.server.endpoints.Dashboard;
 import cgd.debug.dashboard.server.endpoints.EvalHScript;
 import cgd.debug.dashboard.server.endpoints.GetSceneDom2D;
@@ -341,6 +342,7 @@ class HeapsDebugServer {
         ServeUI.register();
         HighlightObject.register();
         ClearHighlight.register();
+		AddChildNode.register();
         ManualEditObject.register();
         ManualEditTransform.register();
     }

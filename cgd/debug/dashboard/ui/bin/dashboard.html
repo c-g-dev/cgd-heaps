@@ -26,20 +26,21 @@ label{display:flex;align-items:center;gap:6px;color:#cbd5e1;}
 .collapsed>.children{display:none;}
 
 
-#modal{position:fixed;inset:0;background:rgba(2,6,23,.7);display:none;align-items:center;justify-content:center;padding:24px;}
-#modal .dialog{background:#0b1220;border:1px solid #1f2937;border-radius:8px;max-width:640px;width:100%;box-shadow:0 10px 30px rgba(0,0,0,.4);}
-#modal header{display:flex;align-items:center;justify-content:space-between;background:#0b1220;border-bottom:1px solid #1f2937;padding:10px 14px;font-size:14px;}
-#modal .content{padding:12px 14px;}
-#modal pre{margin:0;background:transparent;color:#cbd5e1;max-height:60vh;overflow:auto;}
-#modal .close{background:#334155;color:#e5e7eb;border:1px solid #475569;border-radius:6px;padding:4px 8px;cursor:pointer;}
-#modal .close:hover{background:#1f2937;}
+#modal,#addChildModal{position:fixed;inset:0;background:rgba(2,6,23,.7);display:none;align-items:center;justify-content:center;padding:24px;}
+#modal .dialog,#addChildModal .dialog{background:#0b1220;border:1px solid #1f2937;border-radius:8px;max-width:640px;width:100%;box-shadow:0 10px 30px rgba(0,0,0,.4);}
+#modal header,#addChildModal header{display:flex;align-items:center;justify-content:space-between;background:#0b1220;border-bottom:1px solid #1f2937;padding:10px 14px;font-size:14px;}
+#modal .content,#addChildModal .content{padding:12px 14px;}
+#modal pre,#addChildModal pre{margin:0;background:transparent;color:#cbd5e1;max-height:60vh;overflow:auto;}
+#modal .close,#addChildModal .close{background:#334155;color:#e5e7eb;border:1px solid #475569;border-radius:6px;padding:4px 8px;cursor:pointer;}
+#modal .close:hover,#addChildModal .close:hover{background:#1f2937;}
 
-#modal .field-row{display:flex;align-items:center;gap:8px;margin:6px 0;}
-#modal .field-row label{min-width:72px;color:#cbd5e1;}
-#modal .field-row input[type="number"]{background:#0f172a;border:1px solid #334155;color:#e5e7eb;border-radius:6px;padding:4px 6px;width:110px;}
-#modal .field-row input[type="checkbox"]{transform:scale(1.1);} 
-#modal .apply{background:#2563eb;color:#fff;border:1px solid #1d4ed8;border-radius:6px;padding:4px 8px;cursor:pointer;}
-#modal .apply:hover{background:#1d4ed8;}
+#modal .field-row,#addChildModal .field-row{display:flex;align-items:center;gap:8px;margin:6px 0;}
+#modal .field-row label,#addChildModal .field-row label{min-width:72px;color:#cbd5e1;}
+#modal .field-row input[type="number"],#addChildModal .field-row input[type="number"],#addChildModal .field-row select{background:#0f172a;border:1px solid #334155;color:#e5e7eb;border-radius:6px;padding:4px 6px;width:110px;}
+#modal .field-row input[type="checkbox"],#addChildModal .field-row input[type="checkbox"]{transform:scale(1.1);}
+#modal .apply,#addChildModal .apply{background:#2563eb;color:#fff;border:1px solid #1d4ed8;border-radius:6px;padding:4px 8px;cursor:pointer;}
+#modal .apply:hover,#addChildModal .apply:hover{background:#1d4ed8;}
+.hint{color:#94a3b8;font-size:12px;}
 </style>
 </head>
 <body>
@@ -66,6 +67,17 @@ label{display:flex;align-items:center;gap:6px;color:#cbd5e1;}
   
   
 </div>
+<div id="addChildModal">
+  <div class="dialog">
+    <header>
+      <div>Add child node</div>
+      <button class="close" id="addChildClose">Close</button>
+    </header>
+    <div class="content">
+      <div id="addChildBody"></div>
+    </div>
+  </div>
+</div>
 <script>
 const treeEl = document.getElementById('tree');
 const statusEl = document.getElementById('status');
@@ -78,6 +90,183 @@ let fieldInputs = {};
 const modal = document.getElementById('modal');
 const modalBody = document.getElementById('modalBody');
 const modalClose = document.getElementById('modalClose');
+const addChildModal = document.getElementById('addChildModal');
+const addChildBody = document.getElementById('addChildBody');
+const addChildClose = document.getElementById('addChildClose');
+
+let addChildDraft = null;
+
+function uint8ToBase64(data){
+  let binary = '';
+  const chunkSize = 0x8000;
+  for (let i = 0; i < data.length; i += chunkSize) {
+    const chunk = data.subarray(i, i + chunkSize);
+    binary += String.fromCharCode.apply(null, chunk);
+  }
+  return btoa(binary);
+}
+
+function readImageAsRgba(file){
+  return new Promise((resolve, reject) => {
+    const objectUrl = URL.createObjectURL(file);
+    const img = new Image();
+    img.onload = () => {
+      const width = img.naturalWidth || img.width;
+      const height = img.naturalHeight || img.height;
+      const canvas = document.createElement('canvas');
+      canvas.width = width;
+      canvas.height = height;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(img, 0, 0);
+      const imageData = ctx.getImageData(0, 0, width, height);
+      URL.revokeObjectURL(objectUrl);
+      resolve({
+        fileName: file.name,
+        width,
+        height,
+        pixelsBase64: uint8ToBase64(imageData.data)
+      });
+    };
+    img.onerror = () => {
+      URL.revokeObjectURL(objectUrl);
+      reject(new Error('Failed to decode image'));
+    };
+    img.src = objectUrl;
+  });
+}
+
+function hideAddChildModal(){
+  addChildModal.style.display = 'none';
+  addChildDraft = null;
+  addChildBody.innerHTML = '';
+}
+
+function showAddChildModal(node){
+  if (!node || !node.id) return;
+  addChildDraft = {
+    parentId: String(node.id),
+    parentType: String(node.type || 'Object'),
+    kind: 'Bitmap',
+    bitmap: null
+  };
+  renderAddChildModal();
+  addChildModal.style.display = 'flex';
+}
+
+function renderAddChildModal(){
+  if (!addChildDraft) return;
+
+  const wrap = document.createElement('div');
+
+  const parentInfo = document.createElement('div');
+  parentInfo.textContent = `Parent: ${addChildDraft.parentType} — ${addChildDraft.parentId}`;
+  parentInfo.style.marginBottom = '10px';
+  parentInfo.style.color = '#93c5fd';
+  wrap.appendChild(parentInfo);
+
+  const kindRow = document.createElement('div');
+  kindRow.className = 'field-row';
+  const kindLabel = document.createElement('label');
+  kindLabel.textContent = 'Kind';
+  const kindSelect = document.createElement('select');
+  const bitmapOpt = document.createElement('option');
+  bitmapOpt.value = 'Bitmap';
+  bitmapOpt.textContent = 'Bitmap';
+  kindSelect.appendChild(bitmapOpt);
+  kindSelect.value = addChildDraft.kind;
+  kindSelect.addEventListener('change', () => {
+    addChildDraft.kind = kindSelect.value;
+    addChildDraft.bitmap = null;
+    renderAddChildModal();
+  });
+  kindRow.appendChild(kindLabel);
+  kindRow.appendChild(kindSelect);
+  wrap.appendChild(kindRow);
+
+  if (addChildDraft.kind === 'Bitmap') {
+    const bitmapRow = document.createElement('div');
+    bitmapRow.className = 'field-row';
+    const bitmapLabel = document.createElement('label');
+    bitmapLabel.textContent = 'Image';
+
+    const uploadBtn = document.createElement('button');
+    uploadBtn.className = 'apply';
+    uploadBtn.textContent = 'Upload Image';
+
+    const fileInput = document.createElement('input');
+    fileInput.type = 'file';
+    fileInput.accept = 'image/*';
+    fileInput.style.display = 'none';
+    fileInput.addEventListener('change', () => {
+      if (!fileInput.files || fileInput.files.length === 0) return;
+      const selectedFile = fileInput.files[0];
+      readImageAsRgba(selectedFile).then((bitmapData) => {
+        addChildDraft.bitmap = bitmapData;
+        renderAddChildModal();
+      });
+    });
+    uploadBtn.addEventListener('click', () => {
+      fileInput.click();
+    });
+
+    bitmapRow.appendChild(bitmapLabel);
+    bitmapRow.appendChild(uploadBtn);
+    bitmapRow.appendChild(fileInput);
+    wrap.appendChild(bitmapRow);
+
+    const bitmapHint = document.createElement('div');
+    bitmapHint.className = 'hint';
+    bitmapHint.style.marginBottom = '10px';
+    if (addChildDraft.bitmap) {
+      bitmapHint.textContent = `${addChildDraft.bitmap.fileName} (${addChildDraft.bitmap.width}x${addChildDraft.bitmap.height})`;
+    } else {
+      bitmapHint.textContent = 'Upload an image to create the bitmap child.';
+    }
+    wrap.appendChild(bitmapHint);
+  }
+
+  const actionRow = document.createElement('div');
+  actionRow.className = 'field-row';
+  actionRow.style.marginTop = '12px';
+  const createBtn = document.createElement('button');
+  createBtn.className = 'apply';
+  createBtn.textContent = 'Create Child';
+  createBtn.disabled = addChildDraft.kind === 'Bitmap' && !addChildDraft.bitmap;
+  createBtn.addEventListener('click', () => {
+    const payload = {
+      parentId: addChildDraft.parentId,
+      kind: addChildDraft.kind
+    };
+    if (addChildDraft.kind === 'Bitmap') {
+      payload.bitmap = {
+        width: addChildDraft.bitmap.width,
+        height: addChildDraft.bitmap.height,
+        pixelsBase64: addChildDraft.bitmap.pixelsBase64
+      };
+    }
+    fetch('/node/addchild', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json;charset=utf-8' },
+      body: JSON.stringify(payload)
+    }).then((response) => {
+      if (!response.ok) throw new Error('Failed to create child node');
+      hideAddChildModal();
+      setTimeout(fetchDom, 50);
+    });
+  });
+
+  const cancelBtn = document.createElement('button');
+  cancelBtn.className = 'apply';
+  cancelBtn.textContent = 'Cancel';
+  cancelBtn.addEventListener('click', hideAddChildModal);
+
+  actionRow.appendChild(createBtn);
+  actionRow.appendChild(cancelBtn);
+  wrap.appendChild(actionRow);
+
+  addChildBody.innerHTML = '';
+  addChildBody.appendChild(wrap);
+}
 
 function showModalForNode(node){
   const {children, ...props} = node;
@@ -112,8 +301,18 @@ function showModalForNode(node){
     fetch('/highlight/clear', { method: 'POST' });
   });
 
+  const addChildBtn = document.createElement('button');
+  addChildBtn.className = 'apply';
+  addChildBtn.textContent = 'Add Child Node';
+  addChildBtn.disabled = !props.id;
+  addChildBtn.addEventListener('click', () => {
+    if (!props.id) return;
+    showAddChildModal(props);
+  });
+
   actions.appendChild(highlightBtn);
   actions.appendChild(clearBtn);
+  actions.appendChild(addChildBtn);
   wrap.appendChild(actions);
 
   const fieldMap = { sx: 'scaleX', sy: 'scaleY' };
@@ -230,6 +429,7 @@ function stopManualEditPoll(){
 }
 
 function hideModal(){
+  hideAddChildModal();
   modal.style.display = 'none';
   stopManualEditPoll();
   fetch('/manualedit', { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: '' });
@@ -238,6 +438,10 @@ modal.addEventListener('click', (e) => {
   if (e.target === modal) hideModal();
 });
 modalClose.addEventListener('click', hideModal);
+addChildModal.addEventListener('click', (e) => {
+  if (e.target === addChildModal) hideAddChildModal();
+});
+addChildClose.addEventListener('click', hideAddChildModal);
 
 function buildNode(node){
   const hasChildren = Array.isArray(node.children) && node.children.length > 0;
