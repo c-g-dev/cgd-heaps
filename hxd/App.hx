@@ -12,6 +12,8 @@ package hxd;
 **/
 class App implements h3d.IDrawable {
 
+	static var _current:App;
+
 	/**
 		Rendering engine.
 	**/
@@ -36,6 +38,7 @@ class App implements h3d.IDrawable {
 	var isDisposed : Bool;
 
 	public function new() {
+		_current = this;
 		var engine = h3d.Engine.getCurrent();
 		if( engine != null ) {
 			this.engine = engine;
@@ -48,6 +51,11 @@ class App implements h3d.IDrawable {
 				engine.init();
 			});
 		}
+
+	}
+
+	public static function current():App {
+		return _current;
 	}
 
 	/**
