@@ -182,6 +182,14 @@ class Key {
 		return hxd.Timer.frameCount + 2;
 	}
 
+	public static function areAnyPressed( ?codes : Array<Int> = null ) {
+		if (codes == null) return true;
+		for (code in codes) {
+			if (isPressed(code)) return true;
+		}
+		return false;
+	}
+
 	public static function isPressed( code : Int ) {
 		return keyPressed[code] == getFrame() - 1;
 	}
