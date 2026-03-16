@@ -8,6 +8,7 @@ class KeyTool {
 
     public function on(key: Int, callback: Void->Void):Void {
         App.current().s2d.addEventListener((e) -> {
+            trace(e);
             if (e.kind == EventKind.EKeyUp && e.keyCode == key) {
                 callback();
             }

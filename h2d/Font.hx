@@ -357,6 +357,33 @@ class Font {
 	}
 
 	/**
+		Estimates and returns text width for this Font without creating a `Text` instance.
+
+		For multiline text, returns the longest line width.
+	**/
+	public function estimateTextWidth( text : String ) : Float {
+		if( text == null || text.length == 0 ) return 0.;
+		var x = 0.;
+		var xMax = 0.;
+		var prevChar = -1;
+		for( i in 0...text.length ) {
+			var cc = StringTools.fastCodeAt(text, i);
+			if( cc == '\n'.code ) {
+				if( x > xMax ) xMax = x;
+				x = 0.;
+				prevChar = -1;
+				continue;
+			}
+			var c = getChar(cc);
+			if( c != null )
+				x += c.width + c.getKerningOffset(prevChar);
+			prevChar = cc;
+		}
+		if( x > xMax ) xMax = x;
+		return xMax;
+	}
+
+	/**
 		Disposes of the Font instance. Equivalent to `Tile.dispose`.
 	**/
 	public function dispose() {

@@ -1,5 +1,10 @@
 package hxd.snd;
 
+import cgd.coro.Future;
+import cgd.coro.Coroutine;
+import cgd.coro.Coroutine.FrameYield;
+import cgd.coro.ext.CoroutineExtensions;
+
 @:allow(hxd.snd.Manager)
 class Channel extends ChannelBase {
 	static var ID = 0;
@@ -29,6 +34,19 @@ class Channel extends ChannelBase {
 	function new() {
 		super();
 		id = ID++;
+	}
+
+	public function toFuture() : Future<Channel> {
+		if (isReleased())
+			return Future.of(this);
+		var channel = this;
+		var coro = new Coroutine((_) -> {
+			if (channel.isReleased())
+				return Return(channel);
+			return WaitNextFrame;
+		});
+		CoroutineExtensions.start(coro);
+		return coro.future();
 	}
 
 	/**
