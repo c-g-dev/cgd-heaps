@@ -170,6 +170,10 @@ class Textbox extends h2d.Object {
         return text;
     }
 
+    public function getBackground():Null<h2d.Bitmap> {
+        return bg;
+    }
+
     public function getTypewriter():Null<SuperTextTypewriter> {
         return typewriter;
     }
