@@ -40,11 +40,9 @@ class GetSceneDom2D implements IHeapsDebugEndpoint {
             objectToId: new Map()
         };
 
-        var nextId = 1;
         function getOrAssignId(obj:Object): String {
             if (registry.objectToId.exists(obj)) return registry.objectToId.get(obj);
-            var id = "o" + nextId;
-            nextId++;
+            var id = obj.uuid;
             registry.objectToId.set(obj, id);
             registry.idToObject.set(id, obj);
             return id;

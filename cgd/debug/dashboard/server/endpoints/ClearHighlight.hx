@@ -4,7 +4,7 @@ import cgd.debug.dashboard.HeapsDebugServer;
 import cgd.debug.dashboard.HeapsDebugServer.IHeapsDebugEndpoint;
 import cgd.debug.dashboard.HeapsDebugServer.HeapsDebugRequest;
 import cgd.debug.dashboard.HeapsDebugServer.HeapsDebugResponse;
-import cgd.debug.dashboard.util.RunOnUIThread;
+import cgd.debug.DequeuedDispatcher;
 import cgd.debug.dashboard.util.Highlighter;
 
 class ClearHighlight implements IHeapsDebugEndpoint {
@@ -18,9 +18,9 @@ class ClearHighlight implements IHeapsDebugEndpoint {
 	public function new() {}
 
 	public function handle(server: HeapsDebugServer, req: HeapsDebugRequest): HeapsDebugResponse {
-		HeapsDebugServer.getApp().s2d.addChild(new RunOnUIThread(() -> {
+		DequeuedDispatcher.runOnMain(() -> {
 			Highlighter.clear();
-		}));
+		});
 		return {
 			status: 200,
 			contentType: "text/plain; charset=utf-8",

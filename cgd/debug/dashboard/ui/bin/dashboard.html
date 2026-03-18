@@ -41,16 +41,45 @@ label{display:flex;align-items:center;gap:6px;color:#cbd5e1;}
 #modal .apply,#addChildModal .apply{background:#2563eb;color:#fff;border:1px solid #1d4ed8;border-radius:6px;padding:4px 8px;cursor:pointer;}
 #modal .apply:hover,#addChildModal .apply:hover{background:#1d4ed8;}
 .hint{color:#94a3b8;font-size:12px;}
+.tab-bar{display:flex;gap:4px;padding:8px 16px;background:#111827;border-bottom:1px solid #1f2937;overflow-x:auto;}
+.tab-btn{background:#1f2937;color:#9ca3af;padding:6px 12px;border:1px solid #374151;border-bottom:none;border-radius:6px 6px 0 0;cursor:pointer;}
+.tab-btn:hover{background:#374151;color:#e5e7eb;}
+.tab-btn.active{background:#0f172a;color:#f9fafb;border-color:#1f2937;}
+#disconnectedOverlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.75);
+  z-index: 9999;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  color: #ef4444;
+  backdrop-filter: grayscale(100%);
+}
 </style>
 </head>
 <body>
+<div id="disconnectedOverlay">
+  <div style="font-size: 24px; font-weight: bold; margin-bottom: 8px;">Connection Lost</div>
+  <div>The hosting app appears to be closed.</div>
+</div>
 <header>Heaps Debug Dashboard</header>
+<div class="tab-bar">
+  <button class="tab-btn active" data-target="tab-scene2d">Scene 2D</button>
+  <!-- INJECT_TAB_HEADERS -->
+</div>
+<div class="tab-container">
+  <div id="tab-scene2d" class="tab-pane active" style="display:block;">
 <section>
 <button id="refresh">Fetch /scene/dom2d</button>
 <label><input type="checkbox" id="auto"/> Auto-refresh</label>
 <span id="status"></span>
 </section>
 <div id="tree"></div>
+  </div>
+  <!-- INJECT_TAB_CONTENTS -->
+</div>
 <div id="modal">
   <div class="dialog">
     <header>
@@ -508,6 +537,43 @@ auto.addEventListener('change', () => {
   else { clearInterval(timer); timer = null; }
 });
 window.addEventListener('load', fetchDom);
+
+// Tab Switching Logic
+document.querySelector('.tab-bar').addEventListener('click', (e) => {
+  const btn = e.target.closest('.tab-btn');
+  if (!btn) return;
+  
+  // Hide all tab panes
+  document.querySelectorAll('.tab-pane').forEach(pane => {
+    pane.style.display = 'none';
+    pane.classList.remove('active');
+  });
+  // Deselect all buttons
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  
+  // Show the target tab
+  const targetId = btn.getAttribute('data-target');
+  const targetPane = document.getElementById(targetId);
+  if (targetPane) {
+    targetPane.style.display = 'block';
+    targetPane.classList.add('active');
+  }
+  btn.classList.add('active');
+});
+
+let isDisconnected = false;
+const disconnectedOverlayEl = document.getElementById('disconnectedOverlay');
+function updateConnectionStatus(offline) {
+  if (isDisconnected === offline) return;
+  isDisconnected = offline;
+  disconnectedOverlayEl.style.display = offline ? 'flex' : 'none';
+}
+setInterval(() => {
+  fetch('/', { method: 'HEAD' })
+    .then(() => updateConnectionStatus(false))
+    .catch(() => updateConnectionStatus(true));
+}, 2000);
+
 </script>
 </body>
 </html>

@@ -1,5 +1,9 @@
 package hxd;
 
+import cgd.coro.Coro;
+import cgd.debug.DequeuedDispatcher;
+import cgd.debug.dashboard.HeapsDebugServer;
+
 /**
 	Base class for a Heaps application.
 
@@ -164,6 +168,14 @@ class App implements h3d.IDrawable {
 			hxd.System.setLoop(mainLoop);
 			engine.driver.present();
 			hxd.Key.initialize();
+			#if cgd_debug
+			trace("cgd_debug = true. Attaching HeapsDebugServer and DequeuedDispatcher.");
+			HeapsDebugServer.attach(this, 8083);
+			Coro.start((ctx) -> {
+				DequeuedDispatcher.update();
+				return WaitNextFrame;
+			});
+			#end
 		});
 	}
 

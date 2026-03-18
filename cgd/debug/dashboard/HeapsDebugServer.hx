@@ -38,6 +38,17 @@ typedef SceneObjectRegistry = {
     var objectToId: Map<h2d.Object, String>;
 }
 
+typedef DashboardTab = {
+    var id: String;
+    var label: String;
+    var htmlContent: String;
+}
+
+interface IHeapsDebugPlugin {
+    public var id(default, null): String;
+    public function init(server: HeapsDebugServer): Void;
+}
+
 interface IHeapsDebugEndpoint {
     public var method(default, null): String;
     public var path(default, null): String;
@@ -49,6 +60,8 @@ class HeapsDebugServer {
     static inline var MAX_HEADER_BYTES:Int = 64 * 1024;
     static var instance: HeapsDebugServer;
     static var routes: Map<String, IHeapsDebugEndpoint> = new Map();
+    static var tabs: Array<DashboardTab> = [];
+    static var plugins: Map<String, IHeapsDebugPlugin> = new Map();
 
     static var appRef: hxd.App;
 
@@ -77,6 +90,15 @@ class HeapsDebugServer {
     public static function registerEndpoint(endpoint: IHeapsDebugEndpoint): Void {
         var key = endpoint.method + " " + endpoint.path;
         routes.set(key, endpoint);
+    }
+
+    public static function registerPlugin(plugin: IHeapsDebugPlugin): Void {
+        plugins.set(plugin.id, plugin);
+        plugin.init(instance);
+    }
+
+    public static function registerTab(tab: DashboardTab): Void {
+        tabs.push(tab);
     }
 
     

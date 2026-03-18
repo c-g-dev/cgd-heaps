@@ -4,7 +4,7 @@ import cgd.debug.dashboard.HeapsDebugServer;
 import cgd.debug.dashboard.HeapsDebugServer.IHeapsDebugEndpoint;
 import cgd.debug.dashboard.HeapsDebugServer.HeapsDebugRequest;
 import cgd.debug.dashboard.HeapsDebugServer.HeapsDebugResponse;
-import cgd.debug.dashboard.util.RunOnUIThread;
+import cgd.debug.DequeuedDispatcher;
 import h2d.Bitmap;
 import h2d.Object;
 import h2d.Tile;
@@ -83,11 +83,11 @@ class AddChildNode implements IHeapsDebugEndpoint {
 			return badRequest("Bitmap pixel data length mismatch");
 		}
 
-		HeapsDebugServer.getApp().s2d.addChild(new RunOnUIThread(() -> {
+		DequeuedDispatcher.runOnMain(() -> {
 			var pixels = new Pixels(width, height, decodedPixels, PixelFormat.RGBA);
 			var tile = Tile.fromPixels(pixels);
 			new Bitmap(tile, parent);
-		}));
+		});
 
 		return {
 			status: 200,

@@ -5,7 +5,7 @@ import cgd.debug.dashboard.HeapsDebugServer.IHeapsDebugEndpoint;
 import cgd.debug.dashboard.HeapsDebugServer.HeapsDebugRequest;
 import cgd.debug.dashboard.HeapsDebugServer.HeapsDebugResponse;
 import cgd.debug.dashboard.util.ManualEdit;
-import cgd.debug.dashboard.util.RunOnUIThread;
+import cgd.debug.DequeuedDispatcher;
 
 class ManualEditObject implements IHeapsDebugEndpoint {
 	public var method(default, null):String = "POST";
@@ -20,9 +20,9 @@ class ManualEditObject implements IHeapsDebugEndpoint {
 	public function handle(server:HeapsDebugServer, req:HeapsDebugRequest):HeapsDebugResponse {
 		var id = req.body == null ? "" : StringTools.trim(req.body);
 		if (id == "") {
-			HeapsDebugServer.getApp().s2d.addChild(new RunOnUIThread(() -> {
+			DequeuedDispatcher.runOnMain(() -> {
 				ManualEdit.setTarget(null);
-			}));
+			});
 			return {
 				status: 200,
 				contentType: "text/plain; charset=utf-8",
@@ -40,9 +40,9 @@ class ManualEditObject implements IHeapsDebugEndpoint {
 			};
 		}
 
-		HeapsDebugServer.getApp().s2d.addChild(new RunOnUIThread(() -> {
+		DequeuedDispatcher.runOnMain(() -> {
 			ManualEdit.setTarget(target);
-		}));
+		});
 		return {
 			status: 200,
 			contentType: "text/plain; charset=utf-8",

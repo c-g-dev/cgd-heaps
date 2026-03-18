@@ -1,6 +1,6 @@
 package cgd.debug.dashboard.server.endpoints;
 
-import cgd.debug.dashboard.util.RunOnUIThread;
+import cgd.debug.DequeuedDispatcher;
 import cgd.debug.dashboard.HeapsDebugServer;
 import cgd.debug.dashboard.HeapsDebugServer.IHeapsDebugEndpoint;
 import cgd.debug.dashboard.HeapsDebugServer.HeapsDebugRequest;
@@ -31,7 +31,7 @@ class EvalHScript implements IHeapsDebugEndpoint {
 
 		
 		
-			HeapsDebugServer.getApp().s2d.addChild(new RunOnUIThread(() -> {
+			DequeuedDispatcher.runOnMain(() -> {
 				trace("code: " + code);
 				var app = HeapsDebugServer.getApp();
 				var parser = new Parser();
@@ -56,7 +56,7 @@ class EvalHScript implements IHeapsDebugEndpoint {
 				
 				
 				interp.execute(program);
-			}));
+			});
 			
 	
 

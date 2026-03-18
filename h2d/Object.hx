@@ -20,6 +20,25 @@ import hxd.Math;
 @:allow(h2d.Tools)
 class Object #if (domkit && !domkit_heaps) implements domkit.Model<h2d.Object> #end {
 
+	static var UUID_CACHE : Map<hxd.tools.UUID, h2d.Object> = [];
+
+	var _uuid: hxd.tools.UUID;
+	public var uuid(get, never): UUID;
+
+	function get_uuid(): UUID {
+		if(_uuid == null) {
+			_uuid = UUID.generate();
+			if(allocated) {
+				UUID_CACHE.set(_uuid, this);
+			}
+		}
+		return _uuid;
+	}
+
+	public static function getObjectByUUID(uuid:hxd.tools.UUID):h2d.Object {
+		return UUID_CACHE.get(uuid);
+	}
+
 	static var nullDrawable : h2d.Drawable;
 
 	var children : Array<Object>;
@@ -497,9 +516,22 @@ class Object #if (domkit && !domkit_heaps) implements domkit.Model<h2d.Object> #
 		allocated = true;
 		if( filter != null )
 			filter.bind(this);
+		if (_uuid != null && !UUID_CACHE.exists(_uuid)) { 
+			UUID_CACHE.set(_uuid, this);
+		}
 		for( c in children )
 			c.onAdd();
 		if ( _debugBox && debugBoxOverlay != null ) debugBoxOverlay.updateAttachment();
+	}
+
+
+	var removeCallbacks : Array<Void->Void>;
+
+	public function addRemoveCallback(callback:Void->Void) {
+		if (removeCallbacks == null) {
+			removeCallbacks = [];
+		}
+		removeCallbacks.push(callback);
 	}
 
 
@@ -514,6 +546,15 @@ class Object #if (domkit && !domkit_heaps) implements domkit.Model<h2d.Object> #
 		allocated = false;
 		if( filter != null )
 			filter.unbind(this);
+		if (removeCallbacks != null) {
+			for (callback in removeCallbacks) {
+				callback(this);
+			}
+			removeCallbacks = null;
+		}
+		if (_uuid != null) {
+			UUID_CACHE.remove(_uuid);
+		}
 		var i = children.length - 1;
 		while( i >= 0 ) {
 			var c = children[i--];

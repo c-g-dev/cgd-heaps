@@ -4,7 +4,7 @@ import cgd.debug.dashboard.HeapsDebugServer;
 import cgd.debug.dashboard.HeapsDebugServer.IHeapsDebugEndpoint;
 import cgd.debug.dashboard.HeapsDebugServer.HeapsDebugRequest;
 import cgd.debug.dashboard.HeapsDebugServer.HeapsDebugResponse;
-import cgd.debug.dashboard.util.RunOnUIThread;
+import cgd.debug.DequeuedDispatcher;
 import cgd.debug.dashboard.util.Highlighter;
 
 class HighlightObject implements IHeapsDebugEndpoint {
@@ -37,9 +37,9 @@ class HighlightObject implements IHeapsDebugEndpoint {
 			};
 		}
 
-		HeapsDebugServer.getApp().s2d.addChild(new RunOnUIThread(() -> {
+		DequeuedDispatcher.runOnMain(() -> {
 			Highlighter.highlight(target);
-		}));
+		});
 
 		return {
 			status: 200,
