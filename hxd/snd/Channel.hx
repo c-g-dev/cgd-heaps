@@ -36,7 +36,7 @@ class Channel extends ChannelBase {
 		id = ID++;
 	}
 
-	public function toFuture() : Future<Channel> {
+	public function toFuture() : Future {
 		if (isReleased())
 			return Future.of(this);
 		var channel = this;

@@ -130,6 +130,19 @@ class HeapsDebugServer {
         listenSocket.listen(50);
 
         serverThread = Thread.create(handleAcceptLoop);
+
+        var displayHost = listenHost == "0.0.0.0" ? "localhost" : listenHost;
+        var ascii = "
+ _   _                       ____       _                 
+| | | | ___  __ _ _ __  ___ |  _ \\  ___| |__  _   _  __ _ 
+| |_| |/ _ \\/ _` | '_ \\/ __|| | | |/ _ \\ '_ \\| | | |/ _` |
+|  _  |  __/ (_| | |_) \\__ \\| |_| |  __/ |_) | |_| | (_| |
+|_| |_|\\___|\\__,_| .__/|___/|____/ \\___|_.__/ \\__,_|\\__, |
+                 |_|                                |___/ ";
+        Sys.println(ascii);
+        Sys.println(" Heaps Debug Server is running!");
+        Sys.println(" Dashboard: http://" + displayHost + ":" + port + "/");
+        Sys.println("");
     }
 
     

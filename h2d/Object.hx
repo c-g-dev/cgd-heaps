@@ -1,5 +1,6 @@
 package h2d;
 import hxd.Math;
+import hxd.tools.UUID;
 
 /**
 	A base 2D class that all scene tree elements inherit from.
@@ -525,16 +526,6 @@ class Object #if (domkit && !domkit_heaps) implements domkit.Model<h2d.Object> #
 	}
 
 
-	var removeCallbacks : Array<Void->Void>;
-
-	public function addRemoveCallback(callback:Void->Void) {
-		if (removeCallbacks == null) {
-			removeCallbacks = [];
-		}
-		removeCallbacks.push(callback);
-	}
-
-
 	/**
 		Sent when object is removed from the allocated scene.
 
@@ -546,12 +537,6 @@ class Object #if (domkit && !domkit_heaps) implements domkit.Model<h2d.Object> #
 		allocated = false;
 		if( filter != null )
 			filter.unbind(this);
-		if (removeCallbacks != null) {
-			for (callback in removeCallbacks) {
-				callback(this);
-			}
-			removeCallbacks = null;
-		}
 		if (_uuid != null) {
 			UUID_CACHE.remove(_uuid);
 		}

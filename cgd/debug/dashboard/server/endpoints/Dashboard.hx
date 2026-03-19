@@ -25,7 +25,7 @@ class Dashboard implements IHeapsDebugEndpoint {
 		var tabHeaders = new StringBuf();
 		var tabContents = new StringBuf();
 
-		for (tab in HeapsDebugServer.tabs) {
+		@:privateAccess for (tab in HeapsDebugServer.tabs) {
 			tabHeaders.add('<button class="tab-btn" data-target="${tab.id}">${tab.label}</button>\n');
 			tabContents.add('<div id="${tab.id}" class="tab-pane" style="display:none;">${tab.htmlContent}</div>\n');
 		}
