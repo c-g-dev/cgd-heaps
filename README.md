@@ -53,10 +53,16 @@ scripts\install-cli.cmd
   - optional constructor args are omitted
 - If the created object has no parent, it is automatically added to `app.s2d`.
 
+## Debug Server
+
+heaps-debug-server baked in, with better support since this is a fork we have full control over. By setting `-D cgd_debug` you can make it automatically attach with no code changes.
+
+## Baked in Control System
+
+Codified the deepnightlibs controller system (with some modifications) directly into the heaps framework.
+
 ## Planned features
 
 - Fix the Graphics line rendering (heaps.io has had open PRs for years that fix these issues but they never get merged)
-- More componentizing support
-- Potentially port my ludi coroutine system into this repo directly
-- Potentially just port in all of my heaps.io utilities for convinience
+- More componentizing support (once the hotloading feature of the -hl target comes out in the next hashlink release, heaps componitization will be blown open and largely solved)
 
