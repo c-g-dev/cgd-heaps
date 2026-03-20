@@ -11,8 +11,7 @@ import haxe.GameController;
 import dx.GameController;
 #else
 */
-private typedef Event = {
-}
+private typedef Event = Dynamic;
 private class GameController {
 	public static var NUM_AXES = 0;
 	public static var NUM_BUTTONS = 0;

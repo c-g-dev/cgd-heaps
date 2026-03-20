@@ -1,14 +1,24 @@
 package cgd.ctrl;
 
 import hxd.Key;
-import hxd.Pad;
 #if macro
 import haxe.macro.Expr;
 #end
 
+typedef ControllerPad = {
+    public function isDown(buttonId:Int):Bool;
+    public function isPressed(buttonId:Int):Bool;
+    public function isReleased(buttonId:Int):Bool;
+    public function rumble(strength:Float, seconds:Float):Void;
+    var xAxis:Float;
+    var yAxis:Float;
+    var rxAxis:Float;
+    var ryAxis:Float;
+}
+
 class Controller<TBase:Int = Int> {
     public var bindings(default, null):Map<TBase, Array<InputBinding<TBase>>> = new Map();
-    public var pad(default, null):Null<Pad>;
+    public var pad(default, null):Null<ControllerPad>;
 
     public var disableRumble:Bool = false;
     public var rumbleMultiplicator:Float = 1.0;
@@ -24,11 +34,11 @@ class Controller<TBase:Int = Int> {
             : macro new cgd.ctrl.Controller($pad);
     }
 
-    public function new(?pad:Pad) {
+    public function new(?pad:ControllerPad) {
         this.pad = pad;
     }
 
-    public function setPad(pad:Pad):Void {
+    public function setPad(pad:ControllerPad):Void {
         this.pad = pad;
     }
 
@@ -141,16 +151,16 @@ class Controller<TBase:Int = Int> {
 
 
 class InputBinding<T:Int> {
-    var valueFn:Null<Pad> -> Float;
-    var downFn:Null<Pad> -> Bool;
-    var pressedFn:Null<Pad> -> Bool;
-    var releasedFn:Null<Pad> -> Bool;
+    var valueFn:Null<ControllerPad> -> Float;
+    var downFn:Null<ControllerPad> -> Bool;
+    var pressedFn:Null<ControllerPad> -> Bool;
+    var releasedFn:Null<ControllerPad> -> Bool;
 
     public function new(
-        valueFn:Null<Pad> -> Float,
-        downFn:Null<Pad> -> Bool,
-        pressedFn:Null<Pad> -> Bool,
-        releasedFn:Null<Pad> -> Bool
+        valueFn:Null<ControllerPad> -> Float,
+        downFn:Null<ControllerPad> -> Bool,
+        pressedFn:Null<ControllerPad> -> Bool,
+        releasedFn:Null<ControllerPad> -> Bool
     ) {
         this.valueFn = valueFn;
         this.downFn = downFn;
@@ -158,19 +168,19 @@ class InputBinding<T:Int> {
         this.releasedFn = releasedFn;
     }
 
-    public inline function getValue(pad:Null<Pad>):Float {
+    public inline function getValue(pad:Null<ControllerPad>):Float {
         return valueFn(pad);
     }
 
-    public inline function isDown(pad:Null<Pad>):Bool {
+    public inline function isDown(pad:Null<ControllerPad>):Bool {
         return downFn(pad);
     }
 
-    public inline function isPressed(pad:Null<Pad>):Bool {
+    public inline function isPressed(pad:Null<ControllerPad>):Bool {
         return pressedFn(pad);
     }
 
-    public inline function isReleased(pad:Null<Pad>):Bool {
+    public inline function isReleased(pad:Null<ControllerPad>):Bool {
         return releasedFn(pad);
     }
 
