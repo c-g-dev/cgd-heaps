@@ -1,5 +1,6 @@
 package hxd;
 
+/*
 #if hl
 #if hlsdl
 import sdl.Event;
@@ -9,6 +10,7 @@ import haxe.GameController;
 #elseif hldx
 import dx.GameController;
 #else
+*/
 private typedef Event = {
 }
 private class GameController {
@@ -24,8 +26,8 @@ private class GameController {
 	public static function init() {}
 	public static function detect(_) {}
 }
-#end
-#end
+//#end
+//#end
 
 typedef PadConfig = {
 	analogX : Int,
