@@ -161,7 +161,9 @@ class Key {
 	public static inline var LALT = ALT | LOC_LEFT;
 	public static inline var RALT = ALT | LOC_RIGHT;
 
+	#if !macro
 	public static var debug = new cgd.debug.Helpers.KeyTool();
+	#end
 
 	static var initDone = false;
 	static var keyPressed : Array<Int> = [];
