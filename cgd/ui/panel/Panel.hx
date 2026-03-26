@@ -24,15 +24,21 @@ class Panel extends h2d.Object {
     public var innerHeight(default, null):Float;
 
     var style:PanelStyle;
-    var backgroundBitmap:Null<h2d.Bitmap>;
-    var backgroundGrid:Null<h2d.ScaleGrid>;
+    public var backgroundBitmap(default, null):Null<h2d.Bitmap>;
+    public var backgroundGrid(default, null):Null<h2d.ScaleGrid>;
     var properties:Map<String, Dynamic>;
     var listeners:Map<String, Array<Dynamic -> Void>>;
     var plugins:Array<PanelPlugin>;
 
-    public function new(styleName:String, ?parent:h2d.Object) {
+    public function new(styleInput:Dynamic, ?parent:h2d.Object) {
         super(parent);
-        style = PanelStyles.get(styleName);
+        if( Std.isOfType(styleInput, String) ) {
+            style = PanelStyles.get(styleInput);
+        } else if( Std.isOfType(styleInput, PanelStyle) ) {
+            style = cast styleInput;
+        } else {
+            throw "Panel constructor requires a String (style name) or a PanelStyle object.";
+        }
         properties = [];
         listeners = [];
         plugins = [];

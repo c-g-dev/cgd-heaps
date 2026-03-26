@@ -3,6 +3,8 @@ package cgd.ui.textbox;
 import cgd.ui.SuperTextTypewriter.SuperTextTypewriterDeallocateLinesEffect;
 import cgd.ui.SuperTextTypewriter.SuperTextTypewriterParagraphBreak;
 import cgd.ui.textbox.styling.TestStyle;
+import cgd.ui.panel.PanelStyles;
+import cgd.ui.panel.PanelStyles.PanelStyle;
 
 class TextboxStyle {
 
@@ -18,6 +20,7 @@ class TextboxStyle {
     public var deallocateLinesEffect:SuperTextTypewriterDeallocateLinesEffect;
     public var pluginFactories:Array<Textbox -> TextboxPlugin>;
     public var onInitCallbacks:Array<Textbox -> Void>;
+    public var panelStyle:Null<PanelStyle>;
 
     public function new() {
         background = null;
@@ -32,6 +35,12 @@ class TextboxStyle {
         deallocateLinesEffect = Clear;
         pluginFactories = [];
         onInitCallbacks = [];
+        panelStyle = null;
+    }
+
+    public function usePanel(styleName:String):Void {
+        var registered = PanelStyles.get(styleName);
+        this.panelStyle = Reflect.copy(registered);
     }
 
     public function addOnInit(callback:Textbox -> Void):Void {

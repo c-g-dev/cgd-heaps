@@ -6,13 +6,15 @@ import cgd.ui.SuperTextTypewriter;
 import cgd.ui.SuperTextTypewriter.SuperTextTypewriterOnFrameState;
 import cgd.ui.SuperTextTypewriter.SuperTextTypewriterRequest;
 import cgd.ui.textbox.TextboxStyles.TextboxStyle;
+import cgd.ui.panel.Panel;
+import cgd.ui.panel.PanelStyles.PanelStyle;
 
 class Textbox extends h2d.Object {
 
     var style:TextboxStyle;
     var text:SuperText;
     var typewriter:Null<SuperTextTypewriter>;
-    var bg:Null<h2d.Bitmap>;
+    var panel:Panel;
     var properties:Map<String, Dynamic>;
     var listeners:Map<String, Array<Dynamic -> Void>>;
     var plugins:Array<TextboxPlugin>;
@@ -30,19 +32,29 @@ class Textbox extends h2d.Object {
         lastReportedState = null;
         currentCompletion = null;
         typewriter = null;
-        bg = null;
+        panel = null;
         buildFromStyle();
     }
 
     function buildFromStyle():Void {
-        if( style.background != null )
-            bg = new h2d.Bitmap(style.background, this);
+        var pStyle = style.panelStyle;
+        if( pStyle == null ) {
+            pStyle = new PanelStyle();
+            pStyle.background = style.background;
+            pStyle.paddingLeft = style.textAreaX;
+            pStyle.paddingTop = style.textAreaY;
+            pStyle.paddingRight = style.textAreaX;
+            pStyle.paddingBottom = style.textAreaY;
+            pStyle.sizing = FitContent;
+        }
+
+        panel = new Panel(pStyle, this);
 
         var font = resolveFont();
-        text = new SuperText(font, this);
-        text.x = style.textAreaX;
-        text.y = style.textAreaY;
+        text = new SuperText(font);
         if( style.textAreaWidth > 0 ) text.maxWidth = style.textAreaWidth;
+
+        panel.setContent(text);
 
         for( factory in style.pluginFactories ) {
             var plugin = factory(this);
@@ -82,6 +94,7 @@ class Textbox extends h2d.Object {
         lastReportedState = null;
 
         text.htmlText = html;
+        panel.relayout();
         typewriter = text.createTypewriter(
             style.speed,
             style.maxLines,
@@ -171,7 +184,11 @@ class Textbox extends h2d.Object {
     }
 
     public function getBackground():Null<h2d.Bitmap> {
-        return bg;
+        return panel.backgroundBitmap;
+    }
+
+    public function getPanel():Panel {
+        return panel;
     }
 
     public function getTypewriter():Null<SuperTextTypewriter> {

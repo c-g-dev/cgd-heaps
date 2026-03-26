@@ -463,7 +463,7 @@ class Window {
 			eh.wheelDelta = -e.wheelDelta;
 		#if hlsdl
 		case GControllerAdded, GControllerRemoved, GControllerUp, GControllerDown, GControllerAxis:
-			@:privateAccess hxd.Pad.onEvent( e );
+			//@:privateAccess hxd.Pad.onEvent( e );
 		case KeyDown:
 			eh = new Event(EKeyDown, curMouseX, curMouseY);
 			if( e.keyCode & (1 << 30) != 0 ) e.keyCode = (e.keyCode & ((1 << 30) - 1)) + 1000;

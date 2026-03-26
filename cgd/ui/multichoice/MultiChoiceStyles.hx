@@ -1,6 +1,8 @@
 package cgd.ui.multichoice;
 
 import cgd.ui.SuperText;
+import cgd.ui.panel.PanelStyles.PanelStyle;
+import cgd.ui.panel.PanelStyles;
 
 enum MultiChoiceLayout {
     Vertical;
@@ -81,6 +83,7 @@ class MultiChoiceStyle {
     public var itemRendererFactory:Null<(MultiChoiceBox, MultiChoiceOption) -> MultiChoiceItemRenderer>;
     public var pluginFactories:Array<MultiChoiceBox -> MultiChoicePlugin>;
     public var onInitCallbacks:Array<MultiChoiceBox -> Void>;
+    public var panelStyle:Null<PanelStyle>;
 
     public function new() {
         background = null;
@@ -96,6 +99,12 @@ class MultiChoiceStyle {
         itemRendererFactory = null;
         pluginFactories = [];
         onInitCallbacks = [];
+        panelStyle = null;
+    }
+
+    public function usePanel(styleName:String):Void {
+        var registered = PanelStyles.get(styleName);
+        this.panelStyle = Reflect.copy(registered);
     }
 
     public function addOnInit(callback:MultiChoiceBox -> Void):Void {

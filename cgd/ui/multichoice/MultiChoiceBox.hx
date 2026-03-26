@@ -8,6 +8,8 @@ import cgd.ui.multichoice.MultiChoiceStyles.MultiChoiceLayout;
 import cgd.ui.multichoice.MultiChoiceStyles.MultiChoiceOption;
 import cgd.ui.multichoice.MultiChoiceStyles.MultiChoiceStyle;
 import cgd.coro.Future;
+import cgd.ui.panel.Panel;
+import cgd.ui.panel.PanelStyles.PanelStyle;
 
 private typedef MultiChoiceEntry = {
     var option:MultiChoiceOption;
@@ -19,7 +21,7 @@ private typedef MultiChoiceEntry = {
 class MultiChoiceBox extends h2d.Object {
 
     var style:MultiChoiceStyle;
-    var background:Null<h2d.Bitmap>;
+    var panel:Panel;
     var itemsRoot:h2d.Object;
     var nav:Nav;
     var properties:Map<String, Dynamic>;
@@ -38,15 +40,26 @@ class MultiChoiceBox extends h2d.Object {
         entries = [];
         entryByObject = [];
         selectedIndex = -1;
-        background = null;
+        panel = null;
         nav = new Nav();
-        itemsRoot = new h2d.Object(this);
+        itemsRoot = new h2d.Object();
         buildFromStyle();
     }
 
     function buildFromStyle():Void {
-        if( style.background != null )
-            background = new h2d.Bitmap(style.background, this);
+        var pStyle = style.panelStyle;
+        if( pStyle == null ) {
+            pStyle = new PanelStyle();
+            pStyle.background = style.background;
+            pStyle.paddingLeft = style.margin;
+            pStyle.paddingTop = style.margin;
+            pStyle.paddingRight = style.margin;
+            pStyle.paddingBottom = style.margin;
+            pStyle.sizing = FitContent;
+        }
+
+        panel = new Panel(pStyle, this);
+        panel.setContent(itemsRoot);
 
         for( factory in style.pluginFactories ) {
             var plugin = factory(this);
@@ -352,33 +365,35 @@ class MultiChoiceBox extends h2d.Object {
         var maxWidth:Float = 0;
         if( style.centerItems ) {
             for( entry in entries ) {
-                var bounds = entry.root.getBounds(itemsRoot);
+                var bounds = entry.root.getBounds(entry.root);
                 if( bounds.width > maxWidth )
                     maxWidth = bounds.width;
             }
         }
 
-        var currentY = style.margin;
+        var currentY:Float = 0;
         for( entry in entries ) {
-            var bounds = entry.root.getBounds(itemsRoot);
+            var bounds = entry.root.getBounds(entry.root);
             if( style.centerItems )
-                entry.root.x = style.margin + ((maxWidth - bounds.width) * 0.5) - bounds.xMin;
+                entry.root.x = ((maxWidth - bounds.width) * 0.5) - bounds.xMin;
             else
-                entry.root.x = style.margin - bounds.xMin;
+                entry.root.x = -bounds.xMin;
 
             entry.root.y = currentY - bounds.yMin;
             currentY += bounds.height + style.padding;
         }
+        if( panel != null ) panel.relayout();
     }
 
     function organizeHorizontal():Void {
-        var currentX = style.margin;
+        var currentX:Float = 0;
         for( entry in entries ) {
-            var bounds = entry.root.getBounds(itemsRoot);
+            var bounds = entry.root.getBounds(entry.root);
             entry.root.x = currentX - bounds.xMin;
-            entry.root.y = style.margin - bounds.yMin;
+            entry.root.y = -bounds.yMin;
             currentX += bounds.width + style.padding;
         }
+        if( panel != null ) panel.relayout();
     }
 
     function organizeGrid(numCols:Int):Void {
@@ -395,7 +410,7 @@ class MultiChoiceBox extends h2d.Object {
             var entry = entries[i];
             var col = i % numCols;
             var row = Std.int(i / numCols);
-            var bounds = entry.root.getBounds(itemsRoot);
+            var bounds = entry.root.getBounds(entry.root);
 
             if( colWidths[col] < bounds.width )
                 colWidths[col] = bounds.width;
@@ -407,14 +422,14 @@ class MultiChoiceBox extends h2d.Object {
         }
 
         var xOffsets:Array<Float> = [];
-        var accumX = style.margin;
+        var accumX:Float = 0;
         for( col in 0...numCols ) {
             xOffsets[col] = accumX;
             accumX += colWidths[col] + style.padding;
         }
 
         var yOffsets:Array<Float> = [];
-        var accumY = style.margin;
+        var accumY:Float = 0;
         for( row in 0...rowHeights.length ) {
             yOffsets[row] = accumY;
             accumY += rowHeights[row] + style.padding;
@@ -424,10 +439,45 @@ class MultiChoiceBox extends h2d.Object {
             var entry = entries[i];
             var col = i % numCols;
             var row = Std.int(i / numCols);
-            var bounds = entry.root.getBounds(itemsRoot);
+            var bounds = entry.root.getBounds(entry.root);
             entry.root.x = xOffsets[col] - bounds.xMin;
             entry.root.y = yOffsets[row] - bounds.yMin;
         }
+        if( panel != null ) panel.relayout();
+    }
+
+    public function getPanel():Panel {
+        return panel;
+    }
+
+    public static function __launch__(app:hxd.App):Void {
+        var style = new cgd.ui.multichoice.MultiChoiceStyles.MultiChoiceStyle();
+        style.font = hxd.res.DefaultFont.get();
+        style.textColor = 0xCCCCCC;
+        style.selectedTextColor = 0xFFFFFF;
+        style.disabledTextColor = 0x666666;
+        cgd.ui.multichoice.MultiChoiceStyles.register("preview", style);
+
+        var box = new MultiChoiceBox("preview", app.s2d);
+        box.x = 100;
+        box.y = 100;
+
+        box.addOption("Option 1", function() trace("Selected Option 1"));
+        box.addOption("Option 2", function() trace("Selected Option 2"));
+        box.addOption("Option 3 (Disabled)", function() trace("Selected Option 3"), null, true);
+        box.addOption("Option 4", function() trace("Selected Option 4"));
+
+        hxd.Window.getInstance().addEventTarget(function(e:hxd.Event) {
+            if( e.kind == hxd.Event.EventKind.EKeyDown ) {
+                switch( e.keyCode ) {
+                case hxd.Key.UP: box.moveUp();
+                case hxd.Key.DOWN: box.moveDown();
+                case hxd.Key.LEFT: box.moveLeft();
+                case hxd.Key.RIGHT: box.moveRight();
+                case hxd.Key.ENTER, hxd.Key.SPACE: box.confirm();
+                }
+            }
+        });
     }
 
 }
