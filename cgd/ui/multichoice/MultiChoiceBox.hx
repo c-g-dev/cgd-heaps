@@ -30,6 +30,7 @@ class MultiChoiceBox extends h2d.Object {
     var entries:Array<MultiChoiceEntry>;
     var entryByObject:Map<h2d.Object, MultiChoiceEntry>;
     var selectedIndex:Int;
+    public var promptText(default, null):cgd.ui.SuperText;
 
     public function new(styleName:String, ?parent:h2d.Object) {
         super(parent);
@@ -40,6 +41,7 @@ class MultiChoiceBox extends h2d.Object {
         entries = [];
         entryByObject = [];
         selectedIndex = -1;
+        promptText = null;
         panel = null;
         nav = new Nav();
         itemsRoot = new h2d.Object();
@@ -83,6 +85,27 @@ class MultiChoiceBox extends h2d.Object {
         organizeChoices();
         selectFirstEnabled();
         notifyChoicesChanged();
+    }
+
+    public function setPrompt(text:String):Void {
+        if( text == null || text == "" ) {
+            if( promptText != null ) {
+                promptText.remove();
+                promptText = null;
+                panel.setHeader(null);
+            }
+            return;
+        }
+
+        if( promptText == null ) {
+            var font = style.resolvePromptFont();
+            promptText = new cgd.ui.SuperText(font);
+            promptText.textColor = style.promptTextColor != null ? style.promptTextColor : style.textColor;
+            panel.setHeader(promptText);
+        }
+
+        promptText.htmlText = text;
+        panel.relayout();
     }
 
     public function clearChoices():Void {
@@ -456,12 +479,14 @@ class MultiChoiceBox extends h2d.Object {
         style.textColor = 0xCCCCCC;
         style.selectedTextColor = 0xFFFFFF;
         style.disabledTextColor = 0x666666;
+        style.promptTextColor = 0xAAAAFF;
         cgd.ui.multichoice.MultiChoiceStyles.register("preview", style);
 
         var box = new MultiChoiceBox("preview", app.s2d);
         box.x = 100;
         box.y = 100;
 
+        box.setPrompt("Which would you like to buy?");
         box.addOption("Option 1", function() trace("Selected Option 1"));
         box.addOption("Option 2", function() trace("Selected Option 2"));
         box.addOption("Option 3 (Disabled)", function() trace("Selected Option 3"), null, true);

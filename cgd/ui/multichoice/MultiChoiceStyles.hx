@@ -84,6 +84,9 @@ class MultiChoiceStyle {
     public var pluginFactories:Array<MultiChoiceBox -> MultiChoicePlugin>;
     public var onInitCallbacks:Array<MultiChoiceBox -> Void>;
     public var panelStyle:Null<PanelStyle>;
+    public var promptFont:Null<h2d.Font>;
+    public var promptFontName:Null<String>;
+    public var promptTextColor:Null<Int>;
 
     public function new() {
         background = null;
@@ -100,6 +103,9 @@ class MultiChoiceStyle {
         pluginFactories = [];
         onInitCallbacks = [];
         panelStyle = null;
+        promptFont = null;
+        promptFontName = null;
+        promptTextColor = null;
     }
 
     public function usePanel(styleName:String):Void {
@@ -122,6 +128,17 @@ class MultiChoiceStyle {
             return resolved;
         }
         throw "MultiChoice style must specify either font or fontName.";
+    }
+
+    public function resolvePromptFont():h2d.Font {
+        if( promptFont != null ) return promptFont;
+        if( promptFontName != null ) {
+            var fonts = SuperText.configurable.getFonts();
+            if( fonts != null && fonts.exists(promptFontName) ) {
+                return fonts.get(promptFontName);
+            }
+        }
+        return resolveFont();
     }
 
 }
