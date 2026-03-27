@@ -2,8 +2,8 @@
 setlocal EnableExtensions
 
 for %%I in ("%~dp0..") do set "LIB_PATH=%%~fI"
-if not exist "%LIB_PATH%\Run.hx" (
-  echo Could not locate Run.hx at %LIB_PATH%.
+if not exist "%LIB_PATH%\cgdheaps.hl" (
+  echo Could not locate cgdheaps.hl at %LIB_PATH%.
   exit /b 1
 )
 
@@ -24,12 +24,13 @@ set "TARGET=%INSTALL_DIR%\cgdheaps.cmd"
   echo @echo off
   echo setlocal EnableExtensions
   echo set "LIB_PATH=%LIB_PATH%"
-  echo if not exist "%%LIB_PATH%%\Run.hx" ^(
-  echo   echo Could not locate Run.hx at %%LIB_PATH%%.
+  echo if not exist "%%LIB_PATH%%\cgdheaps.hl" ^(
+  echo   echo Could not locate cgdheaps.hl at %%LIB_PATH%%.
   echo   exit /b 1
   echo ^)
-  echo set "CGDHEAPS_RUN=1"
-  echo haxe --cwd "%%LIB_PATH%%" --run Run.hx %%* "%%CD%%"
+  echo set "CGDHEAPS_CWD=%%CD%%"
+  echo set "CGDHEAPS_LIB_ROOT=%%LIB_PATH%%"
+  echo hl "%%LIB_PATH%%\cgdheaps.hl" %%*
   echo exit /b %%ERRORLEVEL%%
 )
 

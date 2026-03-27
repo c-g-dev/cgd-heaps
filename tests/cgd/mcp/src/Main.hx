@@ -76,6 +76,21 @@ class Main extends App {
             trace("GET_SCREENSHOT: FAILED - Screenshot data too small or null");
         }
 
+        trace("Running EXECUTE_HSCRIPT test...");
+        socket = new Socket();
+        socket.connect(new Host("127.0.0.1"), 8080);
+        var testCode = "s2d.numChildren";
+        var testCodeBase64 = haxe.crypto.Base64.encode(haxe.io.Bytes.ofString(testCode));
+        socket.write("EXECUTE_HSCRIPT:" + testCodeBase64 + "\n");
+        var hscriptRes = socket.read();
+        socket.close();
+
+        var hscriptJson:Dynamic = Json.parse(hscriptRes);
+        if (hscriptJson != null && hscriptJson.success == true && hscriptJson.result != null) {
+            trace("EXECUTE_HSCRIPT: SUCCESS");
+        } else {
+            trace("EXECUTE_HSCRIPT: FAILED - " + hscriptRes);
+        }
 
         trace("=== Testing McpMain JSON-RPC ===");
 
@@ -139,6 +154,27 @@ class Main extends App {
             trace("MCP tools/call get_scene_tree: SUCCESS");
         } else {
             trace("MCP tools/call get_scene_tree: FAILED");
+        }
+
+        trace("Running MCP tools/call execute_hscript test...");
+        var callScriptReq = {
+            jsonrpc: "2.0",
+            id: 4,
+            method: "tools/call",
+            params: { name: "execute_hscript", arguments: { code: "s2d.numChildren" } }
+        };
+        mcpClientPipe.output.writeString(Json.stringify(callScriptReq) + "\n");
+        var callScriptResStr = mcpClientPipe.input.readLine();
+        var callScriptRes:Dynamic = Json.parse(callScriptResStr);
+        if (callScriptRes.result != null && callScriptRes.result.content != null && callScriptRes.result.content[0].type == "text") {
+            var innerJson:Dynamic = Json.parse(callScriptRes.result.content[0].text);
+            if(innerJson.success == true && innerJson.result != null) {
+                trace("MCP tools/call execute_hscript: SUCCESS");
+            } else {
+                trace("MCP tools/call execute_hscript: FAILED (inner result)");
+            }
+        } else {
+            trace("MCP tools/call execute_hscript: FAILED");
         }
 
         Sys.exit(0);

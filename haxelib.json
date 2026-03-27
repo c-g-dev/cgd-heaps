@@ -4,7 +4,7 @@
   "license": "MIT",
   "description": "A Heaps.io fork with scoped resource loading, update-tick enhancements, and preview CLI tooling.",
   "version": "0.0.1",
-  "releasenote": "Added haxelib manifest for CLI entrypoint support.",
+  "releasenote": "Removed Run.hx in favor of standalone CLI tool.",
   "tags": [
     "haxe",
     "heaps",
@@ -13,7 +13,7 @@
   "classPath": "",
   "dependencies": {
     "format": "",
-    "hlsdl": ""
-  },
-  "main": "Run"
+    "hlsdl": "",
+    "hscript": ""
+  }
 }

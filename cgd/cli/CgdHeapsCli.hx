@@ -1,3 +1,5 @@
+package cgd.cli;
+
 import haxe.io.Path;
 import sys.FileSystem;
 
@@ -7,7 +9,7 @@ private typedef RunInvocation = {
     var libraryRoot:String;
 }
 
-class Run {
+class CgdHeapsCli {
 
     static function main():Void {
         var invocation = parseInvocation(Sys.args());
@@ -32,17 +34,33 @@ class Run {
 
     static function parseInvocation(rawArgs:Array<String>):RunInvocation {
         var args = rawArgs.copy();
-        var libraryRoot = normalizeDirectory(Sys.getCwd());
-
-        var callerCwd = libraryRoot;
-        if( Sys.getEnv("CGDHEAPS_RUN") == "1" && args.length > 0 ) {
-            callerCwd = normalizeDirectory(args.pop());
+        
+        // We expect the script wrappers (cgdheaps.cmd or cgdheaps shell script) to pass the 
+        // original working directory as the last argument, and the library root as the second to last argument.
+        // Wait, actually, let's just use environment variables to make it cleaner.
+        // CGDHEAPS_CWD : The caller's CWD
+        // CGDHEAPS_LIB_ROOT : The root of the cgd-heaps library
+        
+        var callerCwd = Sys.getEnv("CGDHEAPS_CWD");
+        if (callerCwd == null) {
+            callerCwd = Sys.getCwd();
         }
-
+        
+        var libraryRoot = Sys.getEnv("CGDHEAPS_LIB_ROOT");
+        if (libraryRoot == null) {
+            // fallback to finding the library root relative to this executable if possible
+            var exePath = Sys.programPath();
+            if (exePath != null) {
+                libraryRoot = Path.directory(exePath);
+            } else {
+                libraryRoot = Sys.getCwd();
+            }
+        }
+        
         return {
             args: args,
-            callerCwd: callerCwd,
-            libraryRoot: libraryRoot
+            callerCwd: normalizeDirectory(callerCwd),
+            libraryRoot: normalizeDirectory(libraryRoot)
         };
     }
 
@@ -69,8 +87,6 @@ class Run {
         Sys.println("Usage:");
         Sys.println("  cgdheaps preview <module>");
         Sys.println("  cgdheaps mcp");
-        Sys.println("  haxe --run Run.hx preview <module>");
-        Sys.println("  haxe --run Run.hx mcp");
     }
 
 }

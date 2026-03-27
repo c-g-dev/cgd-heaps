@@ -31,6 +31,20 @@ class McpMain {
                             name: "get_screenshot",
                             description: "Captures the current screen of the game to visually review UI.",
                             inputSchema: { type: "object", properties: {} }
+                        },
+                        {
+                            name: "execute_hscript",
+                            description: "Executes arbitrary hscript code on the connected Heaps application main thread. Has access to 'app', 's2d', and 's3d' variables.",
+                            inputSchema: {
+                                type: "object",
+                                properties: {
+                                    code: {
+                                        type: "string",
+                                        description: "The hscript code to execute"
+                                    }
+                                },
+                                required: ["code"]
+                            }
                         }
                     ]
                 });
@@ -41,6 +55,11 @@ class McpMain {
                 } else if (req.params.name == "get_screenshot") {
                     var data = requestFromGame("GET_SCREENSHOT");
                     sendResponse(stdout, req.id, { content: [{ type: "image", data: data, mimeType: "image/png" }] });
+                } else if (req.params.name == "execute_hscript") {
+                    var code:String = req.params.arguments.code;
+                    var codeBase64 = haxe.crypto.Base64.encode(haxe.io.Bytes.ofString(code));
+                    var data = requestFromGame("EXECUTE_HSCRIPT:" + codeBase64);
+                    sendResponse(stdout, req.id, { content: [{ type: "text", text: data }] });
                 } else {
                     sendResponse(stdout, req.id, { isError: true, content: [{ type: "text", text: "Tool not found" }] });
                 }

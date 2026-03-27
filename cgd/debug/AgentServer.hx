@@ -55,6 +55,27 @@ class AgentServer {
                 lock.wait();
                 client.output.writeString(Base64.encode(bytes));
             }
+            else if (StringTools.startsWith(request, "EXECUTE_HSCRIPT:")) {
+                var codeBase64 = request.substr("EXECUTE_HSCRIPT:".length);
+                var codeBytes = Base64.decode(codeBase64);
+                var code = codeBytes.toString();
+                
+                var resultData:Dynamic = null;
+                var lock = new sys.thread.Lock();
+                haxe.MainLoop.runInMainThread(function() {
+                    var parser = new hscript.Parser();
+                    var ast = parser.parseString(code);
+                    var interp = new hscript.Interp();
+                    interp.variables.set("app", app);
+                    interp.variables.set("s2d", app.s2d);
+                    interp.variables.set("s3d", app.s3d);
+                    var res = interp.execute(ast);
+                    resultData = { success: true, result: Std.string(res) };
+                    lock.release();
+                });
+                lock.wait();
+                client.output.writeString(Json.stringify(resultData));
+            }
             
             client.close();
         }

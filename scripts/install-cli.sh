@@ -15,8 +15,8 @@ LIB_PATH="$(cd "${SCRIPT_DIR}/.." && pwd)"
 INSTALL_DIR="${CGDHEAPS_BIN_DIR:-${HOME}/.local/bin}"
 TARGET="${INSTALL_DIR}/cgdheaps"
 
-if [ ! -f "${LIB_PATH}/Run.hx" ]; then
-  echo "Could not locate Run.hx at ${LIB_PATH}." >&2
+if [ ! -f "${LIB_PATH}/cgdheaps.hl" ]; then
+  echo "Could not locate cgdheaps.hl at ${LIB_PATH}." >&2
   exit 1
 fi
 
@@ -31,13 +31,14 @@ set -euo pipefail
 
 LIB_PATH="${LIB_PATH_ESCAPED}"
 
-if [ ! -f "\${LIB_PATH}/Run.hx" ]; then
-  echo "Could not locate Run.hx at \${LIB_PATH}." >&2
+if [ ! -f "\${LIB_PATH}/cgdheaps.hl" ]; then
+  echo "Could not locate cgdheaps.hl at \${LIB_PATH}." >&2
   exit 1
 fi
 
-export CGDHEAPS_RUN=1
-exec haxe --cwd "\${LIB_PATH}" --run Run.hx "\$@" "\${PWD}"
+export CGDHEAPS_CWD="\${PWD}"
+export CGDHEAPS_LIB_ROOT="\${LIB_PATH}"
+exec hl "\${LIB_PATH}/cgdheaps.hl" "\$@"
 EOF
 
 chmod +x "${TARGET}"
