@@ -83,12 +83,14 @@ class Panel extends h2d.Object {
                 style.borderBottom,
                 this
             );
+            this.addChildAt(backgroundGrid, 0);
             backgroundGrid.tileBorders = style.tileBorders;
             backgroundGrid.tileCenter = style.tileCenter;
             backgroundGrid.ignoreScale = style.ignoreScale;
             backgroundGrid.borderScale = style.borderScale;
         } else {
             backgroundBitmap = new h2d.Bitmap(style.background, this);
+            this.addChildAt(backgroundBitmap, 0);
         }
     }
 
