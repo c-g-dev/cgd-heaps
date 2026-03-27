@@ -62,7 +62,7 @@ class Controls {
     }
 
     @:noCompletion
-    public static function _getForClass<TAccess:Int = Int>(className:String):ControllerAccess<TAccess, Int> {
+    public static function _getForClass<TAccess:Int>(className:String):ControllerAccess<TAccess, Int> {
         if (globalController == null) {
             throw "Controls.setGlobal() must be called before any component calls Controls.get().";
         }

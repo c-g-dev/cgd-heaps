@@ -1,0 +1,9 @@
+-cp src
+-cp ../../../
+-cp tests/cgd/mcp/src
+-lib format
+-lib hlsdl
+-lib ludi-commons
+-lib hscript
+-main Main
+-hl tests/cgd/mcp/test.hl

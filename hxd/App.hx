@@ -168,14 +168,25 @@ class App implements h3d.IDrawable {
 			hxd.System.setLoop(mainLoop);
 			engine.driver.present();
 			hxd.Key.initialize();
+			
+			var mcpServerStarted = false;
 			#if cgd_debug
 			trace("cgd_debug = true. Attaching HeapsDebugServer and DequeuedDispatcher.");
 			HeapsDebugServer.attach(this, 8083);
+			new cgd.debug.AgentServer(this);
+			mcpServerStarted = true;
 			Coro.start((ctx) -> {
 				DequeuedDispatcher.update();
 				return WaitNextFrame;
 			});
 			#end
+            
+            #if hl
+            if (!mcpServerStarted) {
+                trace("Starting AgentServer because HL runtime is active");
+                new cgd.debug.AgentServer(this);
+            }
+            #end
 		});
 	}
 

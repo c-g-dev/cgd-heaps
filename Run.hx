@@ -23,8 +23,10 @@ class Run {
                     throw "Usage: cgdheaps preview <module>";
                 }
                 cgd.cli.preview.PreviewMain.run(invocation.args[1], invocation.callerCwd, invocation.libraryRoot);
+            case "mcp":
+                cgd.cli.mcp.McpMain.run(invocation.callerCwd, invocation.libraryRoot);
             default:
-                throw 'Unknown cgdheaps command "${command}". Supported commands: preview';
+                throw 'Unknown cgdheaps command "${command}". Supported commands: preview, mcp';
         }
     }
 
@@ -66,7 +68,9 @@ class Run {
         Sys.println("");
         Sys.println("Usage:");
         Sys.println("  cgdheaps preview <module>");
+        Sys.println("  cgdheaps mcp");
         Sys.println("  haxe --run Run.hx preview <module>");
+        Sys.println("  haxe --run Run.hx mcp");
     }
 
 }
