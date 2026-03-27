@@ -12,6 +12,14 @@ var img = hxd.Res.myImg.toTile();
 
 BUT individual folders/packages can have their own /res folders. The /res folder that is used by a class is mapped to the lowest /res folder in its filetree path. 
 
+You can override that on a class with metadata:
+
+```haxe
+@:resourcePath("../../../res") // hardcode the resource path
+@:matchResourcePath("pkgA.A")  // use the same resource scope as another class
+@:globalResourcePath           // use only the top-level resource path
+```
+
 This requires a full overhaul of the internals of the heaps.io Resource system and cannot easily be ported to its own library. Thus a fork of heaps.io is necessary.
 
 ## Object .update() system

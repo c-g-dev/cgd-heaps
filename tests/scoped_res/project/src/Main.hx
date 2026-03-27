@@ -18,11 +18,20 @@ class Main extends hxd.App {
 		expect("pkgA.dupViaImportedLoader", clean(pkgA.A.dupViaImportedLoader()), "pkgA_dup");
 		expectBool("pkgA.hasValueViaLoaderExists", pkgA.A.hasValueViaLoaderExists(), true);
 		expectBool("pkgA.hasValueViaLoaderExistsScoped", pkgA.A.hasValueViaLoaderExistsScoped(), true);
+		expect("pkgA.globalScoped.shared", clean(pkgA.GlobalScoped.shared()), "root_shared");
+		expect("pkgA.globalScoped.dup", clean(pkgA.GlobalScoped.dup()), "root_dup");
+		expectBool("pkgA.globalScoped.hasValueViaLoaderExistsScoped", pkgA.GlobalScoped.hasValueViaLoaderExistsScoped(), false);
+		expect("pkgA.hardcodedRoot.shared", clean(pkgA.HardcodedRoot.shared()), "root_shared");
+		expect("pkgA.hardcodedRoot.dup", clean(pkgA.HardcodedRoot.dup()), "root_dup");
+		expectBool("pkgA.hardcodedRoot.hasValueViaLoaderExistsScoped", pkgA.HardcodedRoot.hasValueViaLoaderExistsScoped(), false);
 		expect("pkgB.shared", clean(pkgB.B.shared()), "root_shared");
 		expect("pkgB.dup", clean(pkgB.B.dup()), "root_dup");
 		expect("pkgB.dupViaLoader", clean(pkgB.B.dupViaLoader()), "root_dup");
 		expectBool("pkgB.hasValueViaLoaderExists", pkgB.B.hasValueViaLoaderExists(), false);
 		expectBool("pkgB.hasValueViaLoaderExistsScoped", pkgB.B.hasValueViaLoaderExistsScoped(), false);
+		expect("pkgB.matchPkgA.valueViaLoader", clean(pkgB.MatchPkgA.valueViaLoader()), "pkgA_value");
+		expect("pkgB.matchPkgA.dupViaLoader", clean(pkgB.MatchPkgA.dupViaLoader()), "pkgA_dup");
+		expectBool("pkgB.matchPkgA.hasValueViaLoaderExistsScoped", pkgB.MatchPkgA.hasValueViaLoaderExistsScoped(), true);
 
 		trace("ok");
 

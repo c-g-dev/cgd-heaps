@@ -5,6 +5,7 @@ import haxe.macro.Compiler;
 import haxe.macro.Context;
 import haxe.macro.Expr;
 import haxe.macro.ExprTools;
+import haxe.macro.Type;
 
 private typedef ScopeInfo = {
 	var id : String;
@@ -18,6 +19,12 @@ private typedef RootInfo = {
 	var key : String;
 	var path : String;
 }
+
+private typedef ResourcePathMetadata = {
+	var kind : String;
+	var value : Null<String>;
+	var pos : Position;
+}
 #end
 
 class ScopedRes {
@@ -25,10 +32,12 @@ class ScopedRes {
 	#if macro
 	static var setupDone = false;
 	static var classpathScanned = false;
+	static var discoveredModules : Array<String>;
 	static var defaultPaths : Array<String>;
 	static var defaultScope : ScopeInfo;
 	static var scopeByKey : Map<String,ScopeInfo> = new Map();
 	static var scopeByFile : Map<String,ScopeInfo> = new Map();
+	static var scopeByClass : Map<String,ScopeInfo> = new Map();
 	static var scopeById : Map<String,ScopeInfo> = new Map();
 	static var rootKeyByPath : Map<String,String> = new Map();
 	static var rootPathByKey : Map<String,String> = new Map();
@@ -53,6 +62,8 @@ class ScopedRes {
 	}
 
 	static function discoverMetadataModules() {
+		if( discoveredModules != null )
+			return discoveredModules.copy();
 		var moduleMap = new Map<String,Bool>();
 		var stdRoot = normalizePath(parentDir(Context.resolvePath("StdTypes.hx"))).toLowerCase();
 		for( cp in Context.getClassPath() ) {
@@ -97,7 +108,8 @@ class ScopedRes {
 		}
 		var modules = [for( k in moduleMap.keys() ) k];
 		modules.sort(function( a, b ) return Reflect.compare(a, b));
-		return modules;
+		discoveredModules = modules;
+		return discoveredModules.copy();
 	}
 
 	static function normalizePath( path : String ) {
@@ -149,7 +161,7 @@ class ScopedRes {
 		return defaultPaths.copy();
 	}
 
-	static function getScopePathsForFile( file : String ) {
+	static function getResRootsForFile( file : String ) {
 		var roots = [];
 		var current = normalizePath(new haxe.io.Path(ensureAbsolute(file)).dir);
 		while( true ) {
@@ -161,13 +173,25 @@ class ScopedRes {
 				break;
 			current = parent;
 		}
-		if( roots.length == 0 )
-			return getDefaultPaths();
 		roots.reverse();
 		return roots;
 	}
 
-	static function constStringArg( e : ExprOf<String>, argName : String ) : Null<String> {
+	static function getScopePathsForFile( file : String ) {
+		var roots = getResRootsForFile(file);
+		if( roots.length == 0 )
+			return getDefaultPaths();
+		return roots;
+	}
+
+	static function getGlobalScopePathsForFile( file : String ) {
+		var roots = getResRootsForFile(file);
+		if( roots.length == 0 )
+			return getDefaultPaths();
+		return [roots[0]];
+	}
+
+	static function constStringArg( e : Expr, argName : String ) : Null<String> {
 		if( e == null )
 			return null;
 		return switch( e.expr ) {
@@ -179,6 +203,83 @@ class ScopedRes {
 			Context.error(argName + " should be a string constant", e.pos);
 			null;
 		}
+	}
+
+	static function isMetadataNamed( name : String, expected : String ) {
+		return name == expected || name == ":" + expected;
+	}
+
+	static function getClassPathString( cls : ClassType ) {
+		var parts = cls.pack.copy();
+		parts.push(cls.name);
+		return parts.join(".");
+	}
+
+	static function getClassFile( cls : ClassType ) {
+		var file = Context.getPosInfos(cls.pos).file;
+		if( file == null || file == "" ) {
+			Context.error("Could not determine source file for " + getClassPathString(cls), cls.pos);
+			return null;
+		}
+		return ensureAbsolute(file);
+	}
+
+	static function getResourcePathMetadata( cls : ClassType ) : Null<ResourcePathMetadata> {
+		var matches : Array<ResourcePathMetadata> = [];
+		for( meta in cls.meta.get() ) {
+			if( isMetadataNamed(meta.name, "resourcePath") ) {
+				if( meta.params.length != 1 )
+					Context.error("@resourcePath expects exactly one string argument", meta.pos);
+				matches.push({
+					kind : "resourcePath",
+					value : constStringArg(meta.params[0], "@resourcePath"),
+					pos : meta.pos,
+				});
+			}
+			else if( isMetadataNamed(meta.name, "matchResourcePath") ) {
+				if( meta.params.length != 1 )
+					Context.error("@matchResourcePath expects exactly one string argument", meta.pos);
+				matches.push({
+					kind : "matchResourcePath",
+					value : constStringArg(meta.params[0], "@matchResourcePath"),
+					pos : meta.pos,
+				});
+			}
+			else if( isMetadataNamed(meta.name, "globalResourcePath") ) {
+				if( meta.params.length != 0 )
+					Context.error("@globalResourcePath does not take any arguments", meta.pos);
+				matches.push({
+					kind : "globalResourcePath",
+					value : null,
+					pos : meta.pos,
+				});
+			}
+		}
+		if( matches.length > 1 )
+			Context.error("Only one of @resourcePath, @matchResourcePath, or @globalResourcePath can be applied to " + getClassPathString(cls), cls.pos);
+		return matches.length == 0 ? null : matches[0];
+	}
+
+	static function resolveMatchedClass( path : String, pos : Position ) : ClassType {
+		var t = Context.follow(Context.getType(path));
+		return switch( t ) {
+		case TInst(c, _):
+			c.get();
+		default:
+			Context.error("@matchResourcePath target must resolve to a class: " + path, pos);
+			null;
+		}
+	}
+
+	static function resolveResourcePath( baseFile : String, path : String, pos : Position ) {
+		var resolved = path;
+		if( !haxe.io.Path.isAbsolute(resolved) )
+			resolved = normalizePath(parentDir(baseFile) + "/" + resolved);
+		else
+			resolved = normalizePath(resolved);
+		if( !sys.FileSystem.exists(resolved) || !sys.FileSystem.isDirectory(resolved) )
+			Context.error("Resolved resource path does not exist or is not a directory: " + resolved, pos);
+		return resolved;
 	}
 
 	static function makeScopeKey( paths : Array<String> ) {
@@ -296,6 +397,64 @@ class ScopedRes {
 		return s;
 	}
 
+	static function ensureScopeForClassType( cls : ClassType, defineType = true, ?visiting : Map<String,Bool> ) {
+		var classKey = getClassPathString(cls);
+		var existing = scopeByClass.get(classKey);
+		if( existing != null ) {
+			if( defineType )
+				defineScopeType(existing);
+			return existing;
+		}
+		if( visiting == null )
+			visiting = new Map();
+		if( visiting.exists(classKey) )
+			Context.error("Cyclic resource path metadata detected while resolving " + classKey, cls.pos);
+		visiting.set(classKey, true);
+		var file = getClassFile(cls);
+		var meta = getResourcePathMetadata(cls);
+		var scope = if( meta == null )
+			ensureScopeForFile(file, defineType)
+		else
+			switch( meta.kind ) {
+			case "resourcePath":
+				ensureScope([resolveResourcePath(file, meta.value, meta.pos)], defineType);
+			case "matchResourcePath":
+				var matchedClass = resolveMatchedClass(meta.value, meta.pos);
+				ensureScopeForClassType(matchedClass, defineType, visiting);
+			case "globalResourcePath":
+				ensureScope(getGlobalScopePathsForFile(file), defineType);
+			default:
+				Context.error("Unknown resource path metadata kind: " + meta.kind, meta.pos);
+				null;
+			}
+		visiting.remove(classKey);
+		if( scope != null )
+			scopeByClass.set(classKey, scope);
+		return scope;
+	}
+
+	static function collectRegexMatches( content : String, re : EReg, onMatch : String -> Void ) {
+		var offset = 0;
+		while( re.matchSub(content, offset) ) {
+			onMatch(re.matched(1));
+			var matched = re.matchedPos();
+			offset = matched.pos + (matched.len > 0 ? matched.len : 1);
+		}
+	}
+
+	static function collectMetadataScopesForFile( file : String ) {
+		var content = sys.io.File.getContent(file);
+		collectRegexMatches(content, ~/@:?resourcePath\s*\(\s*"([^"]+)"\s*\)/, function( path ) {
+			ensureScope([resolveResourcePath(file, path, Context.currentPos())], true);
+		});
+		collectRegexMatches(content, ~/@:?matchResourcePath\s*\(\s*"([^"]+)"\s*\)/, function( path ) {
+			var matchedClass = resolveMatchedClass(path, Context.currentPos());
+			ensureScopeForClassType(matchedClass, true);
+		});
+		if( ~/@:?globalResourcePath\b/.match(content) )
+			ensureScope(getGlobalScopePathsForFile(file), true);
+	}
+
 	static function scanClassPathRec( path : String, visited : Map<String,Bool> ) {
 		var abs = normalizePath(path);
 		if( visited.exists(abs) )
@@ -307,8 +466,10 @@ class ScopedRes {
 			var full = normalizePath(abs + "/" + f);
 			if( sys.FileSystem.isDirectory(full) )
 				scanClassPathRec(full, visited);
-			else if( StringTools.endsWith(f, ".hx") )
+			else if( StringTools.endsWith(f, ".hx") ) {
 				ensureScopeForFile(full, true);
+				collectMetadataScopesForFile(full);
+			}
 		}
 	}
 
@@ -331,10 +492,7 @@ class ScopedRes {
 		if( c == null )
 			return ensureDefaultScope();
 		var cls = c.get();
-		var p = Context.getPosInfos(cls.pos).file;
-		if( p == null || p == "" )
-			return ensureDefaultScope();
-		var s = ensureScopeForFile(p, true);
+		var s = ensureScopeForClassType(cls, true);
 		if( s == null )
 			return ensureDefaultScope();
 		return s;
