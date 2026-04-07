@@ -339,9 +339,34 @@ function showModalForNode(node){
     showAddChildModal(props);
   });
 
+  const exportTransformBtn = document.createElement('button');
+  exportTransformBtn.className = 'apply';
+  exportTransformBtn.textContent = 'Export transform';
+  exportTransformBtn.disabled = !props.id;
+  exportTransformBtn.addEventListener('click', () => {
+    if (!props.id) return;
+    const transformData = {
+      x: props.x || 0,
+      y: props.y || 0,
+      scaleX: props.sx !== undefined ? props.sx : 1,
+      scaleY: props.sy !== undefined ? props.sy : 1,
+      rotation: props.rotation || 0
+    };
+    const blob = new Blob([JSON.stringify(transformData, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = (props.id || 'transform') + '.json';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  });
+
   actions.appendChild(highlightBtn);
   actions.appendChild(clearBtn);
   actions.appendChild(addChildBtn);
+  actions.appendChild(exportTransformBtn);
   wrap.appendChild(actions);
 
   const fieldMap = { sx: 'scaleX', sy: 'scaleY' };
