@@ -1,7 +1,12 @@
 package cgd;
 
+import cgd.utils.uri.RuntimeLocatorProtocol;
+import cgd.utils.uri.RuntimeURI;
+
 class Runtime {
 
+    private static var DEFAULT_PROTOCOL:String = "myapp";
+    private static var protocolResolverRegistry:Map<RuntimeURIProtocol,RuntimeLocatorProtocol>;
     private static var callbackRegistry:Map<String,Array<Void->Void>>;
 
     public static function afterResourcesLoaded(callback:Void->Void):Void {
@@ -33,6 +38,33 @@ class Runtime {
         for(callback in callbacks) {
             callback();
         }
+    }
+
+    public static function locate(uri: String): Dynamic {
+        var runtimeURI = new RuntimeURI(uri);
+        var resolver = protocolResolverRegistry.get(runtimeURI.protocol);
+        if( resolver == null ) {
+            throw 'No resolver found for protocol: ${runtimeURI.protocol}';
+        }
+        return resolver.locate(uri);
+    }
+
+
+
+    public static function addProtocolResolver(protocol: RuntimeURIProtocol, resolver: RuntimeLocatorProtocol): Void {
+        if( protocolResolverRegistry == null ) {
+            protocolResolverRegistry = new Map<RuntimeURIProtocol,RuntimeLocatorProtocol>();
+        }
+        protocolResolverRegistry.set(protocol, resolver);
+    }
+
+    public static function inject(uri: String, value: Dynamic): Void {
+        var runtimeURI = new RuntimeURI(uri);
+        var resolver = protocolResolverRegistry.get(runtimeURI.protocol);
+        if( resolver == null ) {
+            throw 'No resolver found for protocol: ${runtimeURI.protocol}';
+        }
+        resolver.inject(uri, value);
     }
 
 }
