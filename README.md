@@ -26,6 +26,12 @@ This requires a full overhaul of the internals of the heaps.io Resource system a
 
 Heaps.io objects can only do on-frame processing via sync(). In this fork, Objects now have a dedicated .update() method that is called every frame. If an object is disabled, then the update() of its children is not called. The Scene is the root of all update() calls.
 
+## Runtime DI
+
+Added a simple DI utility to assist in componentization.
+
+`cgd.Runtime` and `cgd.utils.uri.RuntimeURI` support dependency-style lookup by URI: register a `RuntimeLocatorProtocol` per protocol (`Runtime.addProtocolResolver`), then `inject(uri, value)` and `locate(uri)` route through the resolver for that URI’s scheme. 
+
 ## Preview CLI
 
 You can launch a quick preview window for an `h2d.Object` class from a project that depends on this library:
