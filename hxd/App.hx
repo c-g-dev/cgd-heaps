@@ -235,6 +235,7 @@ class App implements h3d.IDrawable {
 		engine.render(this);
 	}
 
+
 	/**
 		Update application.
 

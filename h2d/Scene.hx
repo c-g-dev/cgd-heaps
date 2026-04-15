@@ -1,4 +1,5 @@
 package h2d;
+import hxd.Event;
 import hxd.Math;
 
 /**
@@ -599,6 +600,26 @@ class Scene extends Layers implements h3d.IDrawable implements hxd.SceneEvents.I
 				return true;
 			}
 		return false;
+	}
+
+	var _keyUpListeners: Map<Int, Event->Void> = new Map();
+
+	public function onKeyUp(key: Int, callback: Void->Void) {
+		var wrapped = (e) -> {
+			if (e.kind == EventKind.EKeyUp && e.keyCode == key) {
+				callback();
+			}
+		};
+		_keyUpListeners.set(key, wrapped);
+		addEventListener(wrapped);
+	}
+
+	public function removeKeyUpListener(key: Int) {
+		var callback = _keyUpListeners.get(key);
+		if (callback != null) {
+			removeEventListener(callback);
+			_keyUpListeners.remove(key);
+		}
 	}
 
 	/**
