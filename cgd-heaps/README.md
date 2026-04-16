@@ -22,6 +22,19 @@ You can override that on a class with metadata:
 
 This requires a full overhaul of the internals of the heaps.io Resource system and cannot easily be ported to its own library. Thus a fork of heaps.io is necessary.
 
+## Fixed SDL Antialiasing / Hashlink fork
+
+Had to fork hashlink to fix antialiasing on SDL2 target. The normal Heaps.io distribution, nor the normal Hashlink sdl lib distribution, will effectively never let you set antialiasing via SDL2. I'm pretty sure that Sdl.setGlOptions in the current hashlink distribution is completely nonfunctional.
+
+Now you can actually set the SDL2 GL attributes correctly:
+
+```haxe
+static inline var SDL_GL_MULTISAMPLEBUFFERS = 13;
+static inline var SDL_GL_MULTISAMPLESAMPLES = 14;
+sdl.Sdl.setGLAttribute(SDL_GL_MULTISAMPLEBUFFERS, 1);
+sdl.Sdl.setGLAttribute(SDL_GL_MULTISAMPLESAMPLES, 4);
+```
+
 ## Object .update() system
 
 Heaps.io objects can only do on-frame processing via sync(). In this fork, Objects now have a dedicated .update() method that is called every frame. If an object is disabled, then the update() of its children is not called. The Scene is the root of all update() calls.

@@ -17,12 +17,19 @@ class Main extends App {
 	var statusLabel:Text;
 
 	static function main() {
-		h3d.Engine.ANTIALIASING = 4;
-		sdl.Sdl.setGLOptions(4, 3, 24, 8, sdl.Sdl.DOUBLE_BUFFER | sdl.Sdl.GL_CORE_PROFILE, 4);
+		
+	//	h3d.Engine.ANTIALIASING = 4;
+		//sdl.Sdl.setGLOptions(4, 3, 24, 8, sdl.Sdl.DOUBLE_BUFFER | sdl.Sdl.GL_CORE_PROFILE, 4);
+	//	sdl.Sdl.setGLAttribute(SDL_GL_MULTISAMPLEBUFFERS, 1);
+	//	sdl.Sdl.setGLAttribute(SDL_GL_MULTISAMPLESAMPLES, 4);
 		new Main();
 	}
 
+	static inline var SDL_GL_MULTISAMPLEBUFFERS = 13;
+static inline var SDL_GL_MULTISAMPLESAMPLES = 14;
+
 	override function init() {
+		
 		trace("Starting SVG tests...");
 		runAssertions();
 		buildShowcase();
@@ -30,8 +37,9 @@ class Main extends App {
 		trace("GL version: " + sdl.GL.getParameter(sdl.GL.VERSION));
 		trace("GL renderer: " + sdl.GL.getParameter(sdl.GL.RENDERER));
 		trace("GL vendor: " + sdl.GL.getParameter(sdl.GL.VENDOR));
-		var sampleBuffers = sdl.GL.getConfigParameter(sdl.GL.SAMPLE_BUFFERS);
-		var samples = sdl.GL.getConfigParameter(sdl.GL.SAMPLES);
+
+		var sampleBuffers = sdl.Sdl.getGLAttribute(SDL_GL_MULTISAMPLEBUFFERS);
+		var samples = sdl.Sdl.getGLAttribute(SDL_GL_MULTISAMPLESAMPLES);
 		trace("GL_SAMPLE_BUFFERS = " + sampleBuffers);
 		trace("GL_SAMPLES = " + samples);
 	}

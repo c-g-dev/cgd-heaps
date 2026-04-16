@@ -145,9 +145,8 @@ class GlDriver extends Driver {
 	public function new(antiAlias=0) {
 		#if (hlsdl >= version("1.15.0"))
 		if ( computeEnabled )
-			trace("setting gl version to 4.3");
+			//no idea what this is supposed to do
 			//sdl.Sdl.setGLVersion(4, 3);
-			//sdl.Sdl.setGLOptions(4, 3, 24, 8, sdl.Sdl.DOUBLE_BUFFER, 4);
 		#end
 
 		#if js
