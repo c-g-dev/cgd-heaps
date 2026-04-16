@@ -27,7 +27,7 @@
 	https://github.com/HaxeFoundation/hashlink/wiki/
 **/
 
-#define HL_VERSION	0x010F00
+#define HL_VERSION	0x011000
 
 #if defined(_WIN32)
 #	define HL_WIN
@@ -182,7 +182,7 @@
 #ifdef HL_64
 #	define HL_WSIZE 8
 #	define IS_64	1
-#	ifdef HL_VCC
+#	if defined(HL_VCC) || defined(HL_MINGW)
 #		define _PTR_FMT	L"%IX"
 #	else
 #		define _PTR_FMT	u"%lX"
@@ -190,7 +190,7 @@
 #else
 #	define HL_WSIZE 4
 #	define IS_64	0
-#	ifdef HL_VCC
+#	if defined(HL_VCC) || defined(HL_MINGW)
 #		define _PTR_FMT	L"%IX"
 #	else
 #		define _PTR_FMT	u"%X"
@@ -231,13 +231,6 @@ typedef unsigned long long uint64;
 // -------------- UNICODE -----------------------------------
 
 #if defined(HL_WIN) && !defined(HL_LLVM)
-#if (defined(HL_WIN_DESKTOP) && !defined(HL_MINGW)) || defined(HL_XBS)
-#	include <Windows.h>
-#elif defined(HL_WIN_DESKTOP) && defined(HL_MINGW)
-#	include<windows.h>
-#else
-#	include <xdk.h>
-#endif
 #	include <wchar.h>
 typedef wchar_t	uchar;
 #	define USTR(str)	L##str
@@ -256,7 +249,7 @@ HL_API int uvszprintf( uchar *out, int out_size, const uchar *fmt, va_list argli
 #if defined(HL_IOS) || defined(HL_TVOS) || defined(HL_MAC)
 #include <stddef.h>
 #include <stdint.h>
-#if !defined(__cplusplus) || __cplusplus < 201103L
+#if !defined(__cplusplus) || (__cplusplus < 201103L && !defined(_LIBCPP_VERSION))
 typedef uint16_t char16_t;
 typedef uint32_t char32_t;
 #endif
@@ -283,7 +276,7 @@ HL_API void uprintf( const uchar *fmt, const uchar *str );
 C_FUNCTION_END
 
 #if defined(HL_VCC)
-#	define hl_debug_break()	if( IsDebuggerPresent() ) __debugbreak()
+#	define hl_debug_break()	if( hl_detect_debugger() ) __debugbreak()
 #elif defined(HL_PS) && defined(_DEBUG)
 #	define hl_debug_break()	__debugbreak()
 #elif defined(HL_NX)
@@ -602,9 +595,48 @@ HL_API hl_type hlt_dynobj;
 HL_API hl_type hlt_bool;
 HL_API hl_type hlt_abstract;
 
+
+
+#if defined(HL_WIN)
+typedef uchar pchar;
+#define pstrchr wcschr
+#define pstrlen	ustrlen
+#else
+typedef char pchar;
+#define pstrchr strchr
+#define pstrlen	strlen
+#define HL_UTF8PATH
+#endif
+
+#include <setjmp.h>
+
+typedef struct {
+	pchar* file_path;
+	pchar** sys_args;
+	int sys_nargs;
+	void (*throw_jump)(jmp_buf, int);
+	uchar* (*resolve_symbol)(void* addr, uchar* out, int* outSize);
+	int (*capture_stack)(void** stack, int size);
+	bool (*reload_check)(vbyte* alt_file);
+	void* (*static_call)(void* fun, hl_type* t, void** args, vdynamic* out);
+	void* (*get_wrapper)(hl_type* t);
+	void (*profile_event)(int code, vbyte *data, int len);
+	void (*before_exit)();
+	void (*vtune_init)();
+	bool (*load_plugin)( pchar *file );
+	vdynamic* (*resolve_type)( hl_type *t, hl_type *gt );
+	bool static_call_ref;
+	int closure_stack_capture;
+	bool is_debugger_enabled;
+	bool is_debugger_attached;
+} hl_setup_t;
+
+HL_API hl_setup_t hl_setup;
+HL_API void hl_sys_init();
+
 HL_API double hl_nan( void );
 HL_API bool hl_is_dynamic( hl_type *t );
-#define hl_is_ptr(t)	((t)->kind >= HBYTES)
+HL_API bool hl_is_ptr( hl_type *t );
 HL_API bool hl_same_type( hl_type *a, hl_type *b );
 HL_API bool hl_safe_cast( hl_type *t, hl_type *to );
 
@@ -639,10 +671,8 @@ HL_API void hl_assert( void );
 HL_API HL_NO_RETURN( void hl_throw( vdynamic *v ) );
 HL_API HL_NO_RETURN( void hl_rethrow( vdynamic *v ) );
 HL_API HL_NO_RETURN( void hl_null_access( void ) );
-HL_API void hl_setup_longjump( void *j );
-HL_API void hl_setup_exception( void *resolve_symbol, void *capture_stack );
 HL_API void hl_dump_stack( void );
-HL_API bool hl_maybe_print_custom_stack( vdynamic *exc );
+HL_API void hl_print_uncaught_exception( vdynamic *exc );
 HL_API varray *hl_exception_stack( void );
 HL_API bool hl_detect_debugger( void );
 
@@ -901,12 +931,7 @@ typedef struct {
 #define hl_fatal4(msg,p0,p1,p2,p3)	hl_fatal_fmt(__FILE__,__LINE__,msg,p0,p1,p2,p3)
 HL_API void *hl_fatal_error( const char *msg, const char *file, int line );
 HL_API void hl_fatal_fmt( const char *file, int line, const char *fmt, ...);
-HL_API void hl_sys_init(void **args, int nargs, void *hlfile);
-HL_API void hl_setup_callbacks(void *sc, void *gw);
-HL_API void hl_setup_callbacks2(void *sc, void *gw, int flags);
-HL_API void hl_setup_reload_check( void *freload, void *param );
 
-#include <setjmp.h>
 typedef struct _hl_trap_ctx hl_trap_ctx;
 struct _hl_trap_ctx {
 	jmp_buf buf;

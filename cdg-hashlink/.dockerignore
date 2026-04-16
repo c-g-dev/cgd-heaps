@@ -1,0 +1,11 @@
+.git
+.cursor
+mcps
+terminals
+agent-transcripts
+node_modules
+*.o
+*.so
+hl
+*.dll
+*.exe

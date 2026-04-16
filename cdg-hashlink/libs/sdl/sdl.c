@@ -1,14 +1,13 @@
 #define HL_NAME(n) sdl_##n
 
 #include <hl.h>
-#include <locale.h>
+#include "hlsystem.h"
 
-#if defined(_WIN32) || defined(__ANDROID__) || defined(HL_IOS) || defined(HL_TVOS)
-#	include <SDL.h>
-#	include <SDL_vulkan.h>
+#include <locale.h>
+#include <SDL.h>
+
+#if defined(HL_WIN) || defined(HL_IOS) || defined(HL_TVOS)
 #	include <SDL_syswm.h>
-#else
-#	include <SDL2/SDL.h>
 #endif
 
 #if defined (HL_IOS) || defined(HL_TVOS)
@@ -61,6 +60,7 @@ typedef enum {
 	DropFile,
 	DropText,
 	DropEnd,
+	KeyMapChanged = 500,
 } event_type;
 
 typedef enum {
@@ -101,6 +101,54 @@ typedef struct {
 
 static bool isGlOptionsSet = false;
 
+#define MAX_PENDING_GL_ATTRS 32
+
+typedef struct {
+	SDL_GLattr attr;
+	int value;
+} pending_gl_attr;
+
+static pending_gl_attr pendingGlAttrs[MAX_PENDING_GL_ATTRS];
+static int pendingGlAttrCount = 0;
+
+static bool is_video_initialized() {
+	return (SDL_WasInit(SDL_INIT_VIDEO) & SDL_INIT_VIDEO) != 0;
+}
+
+static void apply_gl_attribute( SDL_GLattr attr, int value ) {
+	if( SDL_GL_SetAttribute(attr, value) != 0 )
+		hl_error("SDL_GL_SetAttribute failed: %s", hl_to_utf16(SDL_GetError()));
+}
+
+static void queue_gl_attribute( SDL_GLattr attr, int value ) {
+	int i;
+	for( i = 0; i < pendingGlAttrCount; i++ ) {
+		if( pendingGlAttrs[i].attr == attr ) {
+			pendingGlAttrs[i].value = value;
+			return;
+		}
+	}
+	if( pendingGlAttrCount >= MAX_PENDING_GL_ATTRS )
+		hl_error("Too many pending SDL_GL attributes");
+	pendingGlAttrs[pendingGlAttrCount].attr = attr;
+	pendingGlAttrs[pendingGlAttrCount].value = value;
+	pendingGlAttrCount++;
+}
+
+static void set_gl_attribute( SDL_GLattr attr, int value ) {
+	if( is_video_initialized() )
+		apply_gl_attribute(attr, value);
+	else
+		queue_gl_attribute(attr, value);
+}
+
+static void flush_pending_gl_attributes() {
+	int i;
+	for( i = 0; i < pendingGlAttrCount; i++ )
+		apply_gl_attribute(pendingGlAttrs[i].attr, pendingGlAttrs[i].value);
+	pendingGlAttrCount = 0;
+}
+
 HL_PRIM bool HL_NAME(init_once)() {
 	SDL_SetHint(SDL_HINT_JOYSTICK_ALLOW_BACKGROUND_EVENTS, "1");
 	if( SDL_Init(SDL_INIT_EVERYTHING) != 0 ) {
@@ -115,47 +163,59 @@ HL_PRIM bool HL_NAME(init_once)() {
 	// default GL parameters
 	if (!isGlOptionsSet) {
 #ifdef HL_MOBILE
-		SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_ES);
-		SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
-		SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 0);
+		apply_gl_attribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_ES);
+		apply_gl_attribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
+		apply_gl_attribute(SDL_GL_CONTEXT_MINOR_VERSION, 0);
 #else
-		SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
-		SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
-		SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 2);
+		apply_gl_attribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
+		apply_gl_attribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
+		apply_gl_attribute(SDL_GL_CONTEXT_MINOR_VERSION, 2);
 #endif
-		SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
-		SDL_GL_SetAttribute(SDL_GL_STENCIL_SIZE, 8);
-		SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 24);
+		apply_gl_attribute(SDL_GL_DOUBLEBUFFER, 1);
+		apply_gl_attribute(SDL_GL_STENCIL_SIZE, 8);
+		apply_gl_attribute(SDL_GL_DEPTH_SIZE, 24);
 	}
+	flush_pending_gl_attributes();
 
 	return true;
 }
 
 HL_PRIM void HL_NAME(gl_options)( int major, int minor, int depth, int stencil, int flags, int samples ) {
 	isGlOptionsSet = true;
-	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, major);
-	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, minor);
-	SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, depth);
-	SDL_GL_SetAttribute(SDL_GL_STENCIL_SIZE, stencil);
-	SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, (flags&1));
+	set_gl_attribute(SDL_GL_CONTEXT_MAJOR_VERSION, major);
+	set_gl_attribute(SDL_GL_CONTEXT_MINOR_VERSION, minor);
+	set_gl_attribute(SDL_GL_DEPTH_SIZE, depth);
+	set_gl_attribute(SDL_GL_STENCIL_SIZE, stencil);
+	set_gl_attribute(SDL_GL_DOUBLEBUFFER, (flags&1));
 	if( flags&2 )
-		SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
+		set_gl_attribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
 	else if( flags&4 )
-		SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_COMPATIBILITY);
+		set_gl_attribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_COMPATIBILITY);
 	else if( flags&8 )
-		SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_ES);
+		set_gl_attribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_ES);
 	else {
 #ifdef HL_MOBILE
-		SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_ES);
+		set_gl_attribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_ES);
 #else
-		SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
+		set_gl_attribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
 #endif
 	}
 
 	if (samples > 1) {
-		SDL_GL_SetAttribute(SDL_GL_MULTISAMPLEBUFFERS, 1);
-		SDL_GL_SetAttribute(SDL_GL_MULTISAMPLESAMPLES, samples);
+		set_gl_attribute(SDL_GL_MULTISAMPLEBUFFERS, 1);
+		set_gl_attribute(SDL_GL_MULTISAMPLESAMPLES, samples);
 	}
+}
+
+HL_PRIM int HL_NAME(gl_get_attribute)( int attr ) {
+	int value = 0;
+	if( SDL_GL_GetAttribute((SDL_GLattr)attr, &value) != 0 )
+		hl_error("SDL_GL_GetAttribute failed: %s", hl_to_utf16(SDL_GetError()));
+	return value;
+}
+
+HL_PRIM void HL_NAME(gl_set_attribute)( int attr, int value ) {
+	set_gl_attribute((SDL_GLattr)attr, value);
 }
 
 HL_PRIM bool HL_NAME(hint_value)( vbyte* name, vbyte* value) {
@@ -202,14 +262,14 @@ HL_PRIM bool HL_NAME(event_loop)( event_data *event ) {
 			event->window = e.button.windowID;
 			event->button = e.button.button;
 			event->mouseX = e.button.x;
-			event->mouseY = e.motion.y;
+			event->mouseY = e.button.y;
 			break;
 		case SDL_MOUSEBUTTONUP:
 			event->type = MouseUp;
 			event->window = e.button.windowID;
 			event->button = e.button.button;
 			event->mouseX = e.button.x;
-			event->mouseY = e.motion.y;
+			event->mouseY = e.button.y;
 			break;
 		case SDL_FINGERDOWN:
 			event->type = TouchDown;
@@ -373,6 +433,9 @@ HL_PRIM bool HL_NAME(event_loop)( event_data *event ) {
 			event->type = DropEnd;
 			event->window = e.drop.windowID;
 			break;
+		case SDL_KEYMAPCHANGED:
+			event->type = KeyMapChanged;
+			break;
 		default:
 			//printf("Unknown event type 0x%X\\n", e.type);
 			continue;
@@ -494,6 +557,8 @@ HL_PRIM const char *HL_NAME(detect_keyboard_layout)() {
 #define TWIN _ABSTRACT(sdl_window)
 DEFINE_PRIM(_BOOL, init_once, _NO_ARG);
 DEFINE_PRIM(_VOID, gl_options, _I32 _I32 _I32 _I32 _I32 _I32);
+DEFINE_PRIM(_I32, gl_get_attribute, _I32);
+DEFINE_PRIM(_VOID, gl_set_attribute, _I32 _I32);
 DEFINE_PRIM(_BOOL, event_loop, _DYN );
 DEFINE_PRIM(_I32, event_poll, _STRUCT );
 DEFINE_PRIM(_VOID, quit, _NO_ARG);
@@ -523,7 +588,7 @@ HL_PRIM SDL_Window *HL_NAME(win_create_ex)(int x, int y, int width, int height, 
 	// force window to match device resolution on mobile
 	if ((sdlFlags & (
 #ifdef HL_MAC
-		SDL_WINDOW_METAL | 
+		SDL_WINDOW_METAL |
 #endif
 		SDL_WINDOW_VULKAN )) == 0) {
 		sdlFlags |= SDL_WINDOW_OPENGL;
@@ -690,6 +755,10 @@ HL_PRIM void HL_NAME(win_resize)(SDL_Window *win, int mode) {
 	}
 }
 
+HL_PRIM void HL_NAME(win_raise)(SDL_Window *win) {
+	SDL_RaiseWindow(win);
+}
+
 
 HL_PRIM void HL_NAME(win_swap_window)(SDL_Window *win) {
 #if defined(HL_IOS) || defined(HL_TVOS)
@@ -724,6 +793,7 @@ DEFINE_PRIM(_BOOL, win_set_fullscreen, TWIN _I32);
 DEFINE_PRIM(_BOOL, win_set_display_mode, TWIN _I32 _I32 _I32);
 DEFINE_PRIM(_I32, win_display_handle, TWIN);
 DEFINE_PRIM(_VOID, win_resize, TWIN _I32);
+DEFINE_PRIM(_VOID, win_raise, TWIN);
 DEFINE_PRIM(_VOID, win_set_title, TWIN _BYTES);
 DEFINE_PRIM(_VOID, win_set_position, TWIN _I32 _I32);
 DEFINE_PRIM(_VOID, win_get_position, TWIN _REF(_I32) _REF(_I32));

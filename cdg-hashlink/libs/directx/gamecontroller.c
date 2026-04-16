@@ -1,7 +1,9 @@
 #define HL_NAME(n) directx_##n
 #include <hl.h>
+#include "hlsystem.h"
+
 #include <xinput.h>
-#include <InitGuid.h>
+#include <initguid.h>
 #define DIRECTINPUT_VERSION 0x0800
 #include <dinput.h>
 #include <dbt.h>
@@ -120,7 +122,7 @@ static LRESULT CALLBACK gctrl_WndProc(HWND wnd, UINT umsg, WPARAM wparam, LPARAM
 
 static void gctrl_dinput_init( varray *mappings ) {
 	if( !gctrl_dinput) {
-		DirectInput8Create(GetModuleHandle(NULL), DIRECTINPUT_VERSION, &IID_IDirectInput8, &gctrl_dinput, NULL);
+		DirectInput8Create(GetModuleHandle(NULL), DIRECTINPUT_VERSION, &IID_IDirectInput8, (LPVOID*)&gctrl_dinput, NULL);
 		if (gctrl_dinput) {
 			WNDCLASSEX wc;
 			memset(&wc, 0, sizeof(wc));

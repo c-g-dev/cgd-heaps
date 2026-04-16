@@ -33,13 +33,23 @@ class Sdl {
 	}
 
 	public static function setGLOptions( major : Int = 3, minor : Int = 2, depth : Int = 24, stencil : Int = 8, flags : Int = 1, samples : Int = 1 ) {
+		trace("setting gl options to " + major + "." + minor + " depth " + depth + " stencil " + stencil + " flags " + flags + " samples " + samples);
 		requiredGLMajor = major;
 		requiredGLMinor = minor;
 		glOptions(major, minor, depth, stencil, flags, samples);
 	}
 
 	public static function setGLVersion( major : Int, minor : Int) {
+		trace("setting gl version to " + major + "." + minor);
 		setGLOptions(major, minor);
+	}
+
+	public static function getGLAttribute( attr : Int ) : Int {
+		return glGetAttribute(attr);
+	}
+
+	public static function setGLAttribute( attr : Int, value : Int ) {
+		glSetAttribute(attr, value);
 	}
 
 	public static function setHint(name:String, value:String) {
@@ -67,6 +77,8 @@ class Sdl {
 	public static inline var GL_ES                    = 1 << 3;
 
 	static function glOptions( major : Int, minor : Int, depth : Int, stencil : Int, flags : Int, samples : Int ) {}
+	static function glGetAttribute( attr : Int ) : Int return 0;
+	static function glSetAttribute( attr : Int, value : Int ) {}
 
 	static function initOnce() return false;
 	static function eventLoop( e : Dynamic ) return false;

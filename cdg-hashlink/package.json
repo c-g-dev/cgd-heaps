@@ -1,0 +1,8 @@
+{
+  "name": "cdg-hashlink",
+  "private": true,
+  "scripts": {
+    "build": "powershell -NoProfile -ExecutionPolicy Bypass -File .\\build-windows.ps1",
+    "local-push": "powershell -NoProfile -ExecutionPolicy Bypass -Command \"New-Item -ItemType Directory -Force -Path 'C:\\hashlink-1.15.0-win' | Out-Null; Copy-Item -Path 'build/bin/*' -Destination 'C:\\hashlink-1.15.0-win' -Recurse -Force\""
+  }
+}

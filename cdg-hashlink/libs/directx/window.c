@@ -1,5 +1,6 @@
 #define HL_NAME(n) directx_##n
 #include <hl.h>
+#include "hlsystem.h"
 
 #define MAX_EVENTS 1024
 
@@ -17,6 +18,7 @@ typedef enum {
 	DropStart = 10,
 	DropFile = 11,
 	DropEnd = 12,
+	KeyMapChanged = 13,
 } EventType;
 
 typedef enum {
@@ -513,6 +515,9 @@ static LRESULT CALLBACK WndProc( HWND wnd, UINT umsg, WPARAM wparam, LPARAM lpar
 		DragFinish(drop);
 		break;
 	}
+	case WM_INPUTLANGCHANGE:
+		e = addEvent(wnd,KeyMapChanged);
+		break;
 	case WM_CLOSE:
 		addState(Close);
 		return 0;
@@ -706,6 +711,10 @@ HL_PRIM void HL_NAME(win_resize)(dx_window *win, int mode) {
 	default:
 		break;
 	}
+}
+
+HL_PRIM void HL_NAME(win_set_focus)(dx_window* win) {
+	SetFocus(win);
 }
 
 HL_PRIM void HL_NAME(win_set_fullscreen)(dx_window *win, bool fs) {
@@ -925,6 +934,7 @@ DEFINE_PRIM(TWIN, win_create_ex, _I32 _I32 _I32 _I32 _I32);
 DEFINE_PRIM(TWIN, win_create, _I32 _I32);
 DEFINE_PRIM(_VOID, win_set_fullscreen, TWIN _BOOL);
 DEFINE_PRIM(_VOID, win_resize, TWIN _I32);
+DEFINE_PRIM(_VOID, win_set_focus, TWIN);
 DEFINE_PRIM(_VOID, win_set_title, TWIN _BYTES);
 DEFINE_PRIM(_VOID, win_set_size, TWIN _I32 _I32);
 DEFINE_PRIM(_VOID, win_set_min_size, TWIN _I32 _I32);
