@@ -24,8 +24,6 @@ class Main extends App {
 		//sdl.Sdl.setGLOptions(4, 3, 24, 8, sdl.Sdl.DOUBLE_BUFFER | sdl.Sdl.GL_CORE_PROFILE, 4);
 	//	sdl.Sdl.setGLAttribute(SDL_GL_MULTISAMPLEBUFFERS, 1);
 	//	sdl.Sdl.setGLAttribute(SDL_GL_MULTISAMPLESAMPLES, 4);
-	sdl.Sdl.setGLAttribute(SDL_GL_MULTISAMPLEBUFFERS, 1);
-	sdl.Sdl.setGLAttribute(SDL_GL_MULTISAMPLESAMPLES, 4);
 		new Main();
 	}
 
@@ -37,15 +35,7 @@ static inline var SDL_GL_MULTISAMPLESAMPLES = 14;
 		trace("Starting SVG tests...");
 		runAssertions();
 		buildShowcase();
-		trace("All SVG tests passed successfully!");
-		trace("GL version: " + sdl.GL.getParameter(sdl.GL.VERSION));
-		trace("GL renderer: " + sdl.GL.getParameter(sdl.GL.RENDERER));
-		trace("GL vendor: " + sdl.GL.getParameter(sdl.GL.VENDOR));
 
-		var sampleBuffers = sdl.Sdl.getGLAttribute(SDL_GL_MULTISAMPLEBUFFERS);
-		var samples = sdl.Sdl.getGLAttribute(SDL_GL_MULTISAMPLESAMPLES);
-		trace("GL_SAMPLE_BUFFERS = " + sampleBuffers);
-		trace("GL_SAMPLES = " + samples);
 	}
 
 	override function update(dt:Float) {
@@ -160,13 +150,13 @@ static inline var SDL_GL_MULTISAMPLESAMPLES = 14;
 		mutedSvg.x = 72;
 		mutedSvg.y = 320;
 		mutedSvg.unitSize = 2;
-		//mutedSvg.renderMode = MeshRendering;
+		mutedSvg.bake();
 
 		var unmutedSvg = new SVG(UNMUTED_SOURCE, s2d);
 		unmutedSvg.x = 144;
 		unmutedSvg.y = 320;
 		unmutedSvg.unitSize = 2;
-		//unmutedSvg.renderMode = MeshRendering;
+		unmutedSvg.alpha = 0;
 
 		addLabel("Muted / Unmuted icons", 72, 380, 0xD1D5DB, 0.9);
 
