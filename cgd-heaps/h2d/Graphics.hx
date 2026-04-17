@@ -3,6 +3,18 @@ import h2d.impl.BatchDrawState;
 import hxd.Math;
 import hxd.impl.Allocator;
 
+enum LineCap {
+	Butt;
+	Square;
+	Round;
+}
+
+enum LineJoin {
+	Miter;
+	Round;
+	Bevel;
+}
+
 private typedef GraphicsPoint = hxd.poly2tri.Point;
 
 @:dox(hide)
@@ -205,6 +217,21 @@ class Graphics extends Drawable {
 	public var bevel = 0.25; //0 = not beveled, 1 = always beveled
 
 	/**
+		The line cap style.
+	**/
+	public var lineCap : LineCap = Butt;
+
+	/**
+		The line join style.
+	**/
+	public var lineJoin : LineJoin = Miter;
+
+	/**
+		The miter limit ratio for Miter joins. Defaults to 4.0.
+	**/
+	public var miterLimit : Float = 4.0;
+
+	/**
 		Create a new Graphics instance.
 		@param parent An optional parent `h2d.Object` instance to which Graphics adds itself if set.
 	**/
@@ -317,7 +344,9 @@ class Graphics extends Drawable {
 			nx *= d;
 			ny *= d;
 
-			if(size > bevel) {
+			var hw = lineSize * 0.5;
+
+			if(lineJoin == Miter && size > bevel) {
 				content.add(p.x + nx, p.y + ny, 0, 0, p.r, p.g, p.b, p.a);
 				content.add(p.x - nx, p.y - ny, 0, 0, p.r, p.g, p.b, p.a);
 
@@ -335,51 +364,61 @@ class Graphics extends Drawable {
 				pindex += 2;
 			}
 			else {
-				//bevel
+				//bevel or round
 				var n0x = next.x - p.x;
 				var n0y = next.y - p.y;
 				var sign = n0x * nx + n0y * ny;
 
-				var nnx = -ny;
-				var nny = nx;
-
-				var size = nnx * nx1 * ns1 + nny * ny1 * ns1;
-				var d = lineSize * 0.5 / size;
-				nnx *= d;
-				nny *= d;
+				var O1x = p.x - nx1 * ns1 * hw;
+				var O1y = p.y - ny1 * ns1 * hw;
+				var O2x = p.x - nx2 * ns2 * hw;
+				var O2y = p.y - ny2 * ns2 * hw;
 
 				var pnext = i == last ? start : pindex + 3;
 
 				if(sign > 0) {
-					content.add(p.x + nx, p.y + ny, 0, 0, p.r, p.g, p.b, p.a);
-					content.add(p.x - nnx, p.y - nny, 0, 0, p.r, p.g, p.b, p.a);
-					content.add(p.x + nnx, p.y + nny, 0, 0, p.r, p.g, p.b, p.a);
+					content.add(p.x + nx, p.y + ny, 0, 0, p.r, p.g, p.b, p.a); // 0: INNER
+					content.add(O1x, O1y, 0, 0, p.r, p.g, p.b, p.a); // 1: OUTER1
+					content.add(O2x, O2y, 0, 0, p.r, p.g, p.b, p.a); // 2: OUTER2
 
+					if( i < count - 1 || closed ) {
+						content.addIndex(pindex);
+						content.addIndex(pindex + 2);
+						content.addIndex(pnext);
+
+						content.addIndex(pindex + 2);
+						content.addIndex(pnext);
+						content.addIndex(pnext + 1);
+					}
+					
 					content.addIndex(pindex);
-					content.addIndex(pnext);
+					content.addIndex(pindex + 1);
 					content.addIndex(pindex + 2);
-
-					content.addIndex(pindex + 2);
-					content.addIndex(pnext);
-					content.addIndex(pnext + 1);
 				}
 				else {
-					content.add(p.x + nnx, p.y + nny, 0, 0, p.r, p.g, p.b, p.a);
-					content.add(p.x - nx, p.y - ny, 0, 0, p.r, p.g, p.b, p.a);
-					content.add(p.x - nnx, p.y - nny, 0, 0, p.r, p.g, p.b, p.a);
+					O1x = p.x + nx1 * ns1 * hw;
+					O1y = p.y + ny1 * ns1 * hw;
+					O2x = p.x + nx2 * ns2 * hw;
+					O2y = p.y + ny2 * ns2 * hw;
 
-					content.addIndex(pindex + 1);
-					content.addIndex(pnext);
+					content.add(O1x, O1y, 0, 0, p.r, p.g, p.b, p.a); // 0: OUTER1
+					content.add(p.x - nx, p.y - ny, 0, 0, p.r, p.g, p.b, p.a); // 1: INNER
+					content.add(O2x, O2y, 0, 0, p.r, p.g, p.b, p.a); // 2: OUTER2
+
+					if( i < count - 1 || closed ) {
+						content.addIndex(pindex + 2);
+						content.addIndex(pindex + 1);
+						content.addIndex(pnext);
+
+						content.addIndex(pindex + 1);
+						content.addIndex(pnext);
+						content.addIndex(pnext + 1);
+					}
+					
 					content.addIndex(pindex + 2);
-
+					content.addIndex(pindex);
 					content.addIndex(pindex + 1);
-					content.addIndex(pnext);
-					content.addIndex(pnext + 1);
 				}
-
-				content.addIndex(pindex);
-				content.addIndex(pindex + 1);
-				content.addIndex(pindex + 2);
 
 				pindex += 3;
 			}

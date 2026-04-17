@@ -2,6 +2,7 @@ package cgd.svg;
 
 import cgd.svg.SVGDocument.SVGFillRule;
 import cgd.svg.SVGDocument.SVGNodeStyle;
+import cgd.svg.SVGDocument.SVGPathCommand;
 import cgd.svg.SVGDocument.SVGPoint;
 import cgd.svg.SVGDocument.SVGPolyline;
 import cgd.svg.SVGDocument.SVGRenderStats;
@@ -48,9 +49,11 @@ class SVGParser {
 	):SVGPolyline {
 		var start = point(x0, y0);
 		var points = [start];
-		appendArcPoints(points, start, rx, ry, xAxisRotation, largeArcFlag != 0, sweepFlag != 0, point(x0 + dx, y0 + dy));
+		var commands = [Move(start.x, start.y)];
+		appendArcPoints(points, commands, start, rx, ry, xAxisRotation, largeArcFlag != 0, sweepFlag != 0, point(x0 + dx, y0 + dy));
 		return {
 			points: points,
+			commands: commands,
 			closed: false
 		};
 	}
@@ -73,6 +76,12 @@ class SVGParser {
 					point(x + width, y),
 					point(x + width, y + height),
 					point(x, y + height)
+				],
+				commands: [
+					Move(x, y),
+					Line(x + width, y),
+					Line(x + width, y + height),
+					Line(x, y + height)
 				],
 				closed: true
 			};
@@ -165,22 +174,34 @@ class SVGParser {
 					addShape([createEllipsePolyline(cx, cy, rx, ry)], style, transform, shapes, stats);
 				}
 			case "line":
+				var x1 = parseNumber(node.get("x1"), 0);
+				var y1 = parseNumber(node.get("y1"), 0);
+				var x2 = parseNumber(node.get("x2"), 0);
+				var y2 = parseNumber(node.get("y2"), 0);
 				addShape([{
 					points: [
-						point(parseNumber(node.get("x1"), 0), parseNumber(node.get("y1"), 0)),
-						point(parseNumber(node.get("x2"), 0), parseNumber(node.get("y2"), 0))
+						point(x1, y1),
+						point(x2, y2)
+					],
+					commands: [
+						Move(x1, y1),
+						Line(x2, y2)
 					],
 					closed: false
 				}], style, transform, shapes, stats);
 			case "polyline":
 				var points = parsePoints(node.get("points"));
 				if (points.length > 1) {
-					addShape([{points: points, closed: false}], style, transform, shapes, stats);
+					var commands:Array<SVGPathCommand> = [Move(points[0].x, points[0].y)];
+					for (i in 1...points.length) commands.push(Line(points[i].x, points[i].y));
+					addShape([{points: points, commands: commands, closed: false}], style, transform, shapes, stats);
 				}
 			case "polygon":
 				var points = parsePoints(node.get("points"));
 				if (points.length > 2) {
-					addShape([{points: points, closed: true}], style, transform, shapes, stats);
+					var commands:Array<SVGPathCommand> = [Move(points[0].x, points[0].y)];
+					for (i in 1...points.length) commands.push(Line(points[i].x, points[i].y));
+					addShape([{points: points, commands: commands, closed: true}], style, transform, shapes, stats);
 				}
 			default:
 		}
@@ -203,9 +224,16 @@ class SVGParser {
 			return;
 		}
 
+		var scaleX = Math.sqrt(transform.a * transform.a + transform.b * transform.b);
+		var scaleY = Math.sqrt(transform.c * transform.c + transform.d * transform.d);
+		var strokeScale = (scaleX + scaleY) * 0.5;
+
+		var finalStyle = SVGDocument.cloneStyle(style);
+		finalStyle.strokeWidth *= strokeScale;
+
 		var shape:SVGShape = {
 			polylines: transformedPolylines,
-			style: SVGDocument.cloneStyle(style)
+			style: finalStyle
 		};
 		shapes.push(shape);
 
@@ -639,6 +667,7 @@ class SVGParser {
 		var current = point(0, 0);
 		var subpathStart = point(0, 0);
 		var currentPoints:Array<SVGPoint> = [];
+		var currentCommands:Array<SVGPathCommand> = [];
 		var currentClosed = false;
 		var lastCommand = "";
 		var lastCubicControl:Null<SVGPoint> = null;
@@ -648,16 +677,19 @@ class SVGParser {
 			if (currentPoints.length > 0) {
 				result.push({
 					points: currentPoints,
-					closed: currentClosed
+					closed: currentClosed,
+					commands: currentCommands
 				});
 			}
 			currentPoints = [];
+			currentCommands = [];
 			currentClosed = false;
 		}
 
 		inline function startSubpath(pt:SVGPoint) {
 			finishSubpath();
 			currentPoints = [clonePoint(pt)];
+			currentCommands = [Move(pt.x, pt.y)];
 			current = clonePoint(pt);
 			subpathStart = clonePoint(pt);
 		}
@@ -665,8 +697,10 @@ class SVGParser {
 		inline function pushLine(pt:SVGPoint) {
 			if (currentPoints.length == 0) {
 				currentPoints.push(clonePoint(current));
+				currentCommands.push(Move(current.x, current.y));
 			}
 			currentPoints.push(clonePoint(pt));
+			currentCommands.push(Line(pt.x, pt.y));
 			current = clonePoint(pt);
 		}
 
@@ -752,7 +786,7 @@ class SVGParser {
 						var c1 = point(isRelative ? current.x + x1.value : x1.value, isRelative ? current.y + y1.value : y1.value);
 						var c2 = point(isRelative ? current.x + x2.value : x2.value, isRelative ? current.y + y2.value : y2.value);
 						var destination = point(isRelative ? current.x + x.value : x.value, isRelative ? current.y + y.value : y.value);
-						appendCubicPoints(currentPoints, current, c1, c2, destination);
+						appendCubicPoints(currentPoints, currentCommands, current, c1, c2, destination);
 						current = clonePoint(destination);
 						lastCubicControl = clonePoint(c2);
 						lastQuadraticControl = null;
@@ -770,7 +804,7 @@ class SVGParser {
 						var c1 = lastCubicControl == null ? clonePoint(current) : reflectPoint(lastCubicControl, current);
 						var c2 = point(isRelative ? current.x + x2.value : x2.value, isRelative ? current.y + y2.value : y2.value);
 						var destination = point(isRelative ? current.x + x.value : x.value, isRelative ? current.y + y.value : y.value);
-						appendCubicPoints(currentPoints, current, c1, c2, destination);
+						appendCubicPoints(currentPoints, currentCommands, current, c1, c2, destination);
 						current = clonePoint(destination);
 						lastCubicControl = clonePoint(c2);
 						lastQuadraticControl = null;
@@ -787,7 +821,7 @@ class SVGParser {
 						index = y.next;
 						var control = point(isRelative ? current.x + x1.value : x1.value, isRelative ? current.y + y1.value : y1.value);
 						var destination = point(isRelative ? current.x + x.value : x.value, isRelative ? current.y + y.value : y.value);
-						appendQuadraticPoints(currentPoints, current, control, destination);
+						appendQuadraticPoints(currentPoints, currentCommands, current, control, destination);
 						current = clonePoint(destination);
 						lastQuadraticControl = clonePoint(control);
 						lastCubicControl = null;
@@ -800,7 +834,7 @@ class SVGParser {
 						index = y.next;
 						var control = lastQuadraticControl == null ? clonePoint(current) : reflectPoint(lastQuadraticControl, current);
 						var destination = point(isRelative ? current.x + x.value : x.value, isRelative ? current.y + y.value : y.value);
-						appendQuadraticPoints(currentPoints, current, control, destination);
+						appendQuadraticPoints(currentPoints, currentCommands, current, control, destination);
 						current = clonePoint(destination);
 						lastQuadraticControl = clonePoint(control);
 						lastCubicControl = null;
@@ -822,7 +856,7 @@ class SVGParser {
 						var y = readNumber(data, index);
 						index = y.next;
 						var destination = point(isRelative ? current.x + x.value : x.value, isRelative ? current.y + y.value : y.value);
-						appendArcPoints(currentPoints, current, rx.value, ry.value, rotation.value, largeArc.value != 0, sweep.value != 0, destination);
+						appendArcPoints(currentPoints, currentCommands, current, rx.value, ry.value, rotation.value, largeArc.value != 0, sweep.value != 0, destination);
 						current = clonePoint(destination);
 						lastCubicControl = null;
 						lastQuadraticControl = null;
@@ -831,6 +865,7 @@ class SVGParser {
 					currentClosed = true;
 					if (currentPoints.length > 0 && !samePoint(currentPoints[currentPoints.length - 1], subpathStart)) {
 						currentPoints.push(clonePoint(subpathStart));
+						currentCommands.push(Line(subpathStart.x, subpathStart.y));
 					}
 					current = clonePoint(subpathStart);
 					finishSubpath();
@@ -844,9 +879,10 @@ class SVGParser {
 		return result;
 	}
 
-	function appendQuadraticPoints(points:Array<SVGPoint>, start:SVGPoint, control:SVGPoint, destination:SVGPoint):Void {
+	function appendQuadraticPoints(points:Array<SVGPoint>, commands:Array<SVGPathCommand>, start:SVGPoint, control:SVGPoint, destination:SVGPoint):Void {
 		if (points.length == 0) {
 			points.push(clonePoint(start));
+			commands.push(Move(start.x, start.y));
 		}
 		var segments = curveSegmentCount([start, control, destination]);
 		for (i in 1...segments + 1) {
@@ -857,11 +893,17 @@ class SVGParser {
 				mt * mt * start.y + 2 * mt * t * control.y + t * t * destination.y
 			));
 		}
+		var cx1 = start.x + (control.x - start.x) * 2 / 3;
+		var cy1 = start.y + (control.y - start.y) * 2 / 3;
+		var cx2 = destination.x + (control.x - destination.x) * 2 / 3;
+		var cy2 = destination.y + (control.y - destination.y) * 2 / 3;
+		commands.push(Cubic(cx1, cy1, cx2, cy2, destination.x, destination.y));
 	}
 
-	function appendCubicPoints(points:Array<SVGPoint>, start:SVGPoint, controlA:SVGPoint, controlB:SVGPoint, destination:SVGPoint):Void {
+	function appendCubicPoints(points:Array<SVGPoint>, commands:Array<SVGPathCommand>, start:SVGPoint, controlA:SVGPoint, controlB:SVGPoint, destination:SVGPoint):Void {
 		if (points.length == 0) {
 			points.push(clonePoint(start));
+			commands.push(Move(start.x, start.y));
 		}
 		var segments = curveSegmentCount([start, controlA, controlB, destination]);
 		for (i in 1...segments + 1) {
@@ -872,10 +914,12 @@ class SVGParser {
 				mt * mt * mt * start.y + 3 * mt * mt * t * controlA.y + 3 * mt * t * t * controlB.y + t * t * t * destination.y
 			));
 		}
+		commands.push(Cubic(controlA.x, controlA.y, controlB.x, controlB.y, destination.x, destination.y));
 	}
 
 	static function appendArcPoints(
 		points:Array<SVGPoint>,
+		commands:Array<SVGPathCommand>,
 		start:SVGPoint,
 		rxValue:Float,
 		ryValue:Float,
@@ -886,12 +930,14 @@ class SVGParser {
 	):Void {
 		if (points.length == 0) {
 			points.push(clonePoint(start));
+			commands.push(Move(start.x, start.y));
 		}
 
 		var rx = Math.abs(rxValue);
 		var ry = Math.abs(ryValue);
 		if ((rx == 0 && ry == 0) || samePoint(start, destination)) {
 			points.push(clonePoint(destination));
+			commands.push(Line(destination.x, destination.y));
 			return;
 		}
 
@@ -939,13 +985,48 @@ class SVGParser {
 			deltaAngle += Math.PI * 2;
 		}
 
-		var segments = Std.int(Math.ceil(Math.abs(deltaAngle) / (Math.PI / 8)));
-		if (segments < 4) {
-			segments = 4;
+		var numSegments = Std.int(Math.ceil(Math.abs(deltaAngle) / (Math.PI / 2)));
+		var segmentAngle = deltaAngle / numSegments;
+		var a = segmentAngle / 2;
+		var alpha = Math.sin(a) * (Math.sqrt(4 + 3 * Math.pow(Math.tan(a), 2)) - 1) / 3;
+
+		var currentAngle = startAngle;
+		var p0 = point(Math.cos(currentAngle), Math.sin(currentAngle));
+		for (i in 0...numSegments) {
+			var nextAngle = currentAngle + segmentAngle;
+			var p3 = point(Math.cos(nextAngle), Math.sin(nextAngle));
+			var p1 = point(p0.x - alpha * p0.y, p0.y + alpha * p0.x);
+			var p2 = point(p3.x + alpha * p3.y, p3.y - alpha * p3.x);
+			
+			var mp1 = point(
+				cx + cosPhi * rx * p1.x - sinPhi * ry * p1.y,
+				cy + sinPhi * rx * p1.x + cosPhi * ry * p1.y
+			);
+			var mp2 = point(
+				cx + cosPhi * rx * p2.x - sinPhi * ry * p2.y,
+				cy + sinPhi * rx * p2.x + cosPhi * ry * p2.y
+			);
+			var mp3 = point(
+				cx + cosPhi * rx * p3.x - sinPhi * ry * p3.y,
+				cy + sinPhi * rx * p3.x + cosPhi * ry * p3.y
+			);
+			
+			if (i == numSegments - 1) {
+				mp3 = clonePoint(destination);
+			}
+			
+			commands.push(Cubic(mp1.x, mp1.y, mp2.x, mp2.y, mp3.x, mp3.y));
+			p0 = p3;
+			currentAngle = nextAngle;
 		}
 
-		for (i in 1...segments + 1) {
-			var angle = startAngle + (deltaAngle * i / segments);
+		var pointSegments = Std.int(Math.ceil(Math.abs(deltaAngle) / (Math.PI / 8)));
+		if (pointSegments < 4) {
+			pointSegments = 4;
+		}
+
+		for (i in 1...pointSegments + 1) {
+			var angle = startAngle + (deltaAngle * i / pointSegments);
 			var cosAngle = Math.cos(angle);
 			var sinAngle = Math.sin(angle);
 			points.push(point(
@@ -1019,8 +1100,28 @@ class SVGParser {
 		for (pt in polyline.points) {
 			points.push(transformPoint(pt, matrix));
 		}
+		var commands:Array<SVGPathCommand> = null;
+		if (polyline.commands != null) {
+			commands = [];
+			for (cmd in polyline.commands) {
+				commands.push(switch (cmd) {
+					case Move(x, y):
+						var p = transformPoint(point(x, y), matrix);
+						Move(p.x, p.y);
+					case Line(x, y):
+						var p = transformPoint(point(x, y), matrix);
+						Line(p.x, p.y);
+					case Cubic(cx1, cy1, cx2, cy2, x, y):
+						var c1 = transformPoint(point(cx1, cy1), matrix);
+						var c2 = transformPoint(point(cx2, cy2), matrix);
+						var p = transformPoint(point(x, y), matrix);
+						Cubic(c1.x, c1.y, c2.x, c2.y, p.x, p.y);
+				});
+			}
+		}
 		return {
 			points: points,
+			commands: commands,
 			closed: polyline.closed
 		};
 	}

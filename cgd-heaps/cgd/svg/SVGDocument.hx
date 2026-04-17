@@ -17,6 +17,12 @@ enum SVGStrokeLineCap {
 	Square;
 }
 
+enum SVGPathCommand {
+	Move(x:Float, y:Float);
+	Line(x:Float, y:Float);
+	Cubic(cx1:Float, cy1:Float, cx2:Float, cy2:Float, x:Float, y:Float);
+}
+
 typedef SVGPoint = {
 	var x:Float;
 	var y:Float;
@@ -25,6 +31,7 @@ typedef SVGPoint = {
 typedef SVGPolyline = {
 	var points:Array<SVGPoint>;
 	var closed:Bool;
+	@:optional var commands:Array<SVGPathCommand>;
 }
 
 typedef SVGRenderBounds = {

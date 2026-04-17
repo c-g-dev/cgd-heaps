@@ -13,6 +13,8 @@ import hxd.Key;
 class Main extends App {
 	static inline var ASSERT_SOURCE = '<svg viewBox="0 0 10 10" width="20" height="20" fill="none"><g transform="translate(1 2)"><rect x="1" y="1" width="3" height="2" fill="currentColor"/><path d="M2 2 L3 2" stroke="currentColor" stroke-width="1"/></g></svg>';
 	static inline var SHOWCASE_SOURCE = '<svg viewBox="0 0 64 64" width="128" height="128" fill="none"><g transform="translate(4 4)"><rect x="4" y="4" width="48" height="48" rx="10" fill="#1B2230" stroke="currentColor" stroke-width="2"/><circle cx="28" cy="28" r="10" fill="currentColor" fill-opacity="0.25" stroke="currentColor" stroke-width="2"/><path d="M16 36 L26 24 L34 30 L42 18" stroke="currentColor" stroke-width="3"/><polyline points="14,18 22,14 28,20 36,12 44,16" stroke="#7DD3FC" stroke-width="2"/><polygon points="18,42 24,48 14,50" fill="#F59E0B"/></g></svg>';
+	static inline var MUTED_SOURCE = '<svg xmlns="http://www.w3.org/2000/svg" width="200" height="200" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" fill="#FFFFFF" stroke="#FFFFFF"/><line x1="22" y1="9" x2="16" y2="15"/><line x1="16" y1="9" x2="22" y2="15"/></svg>';
+	static inline var UNMUTED_SOURCE = '<svg xmlns="http://www.w3.org/2000/svg" width="200" height="200" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" fill="#FFFFFF" stroke="#FFFFFF"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07" fill="transparent"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14" fill="transparent"/></svg>';
 
 	var statusLabel:Text;
 
@@ -22,6 +24,8 @@ class Main extends App {
 		//sdl.Sdl.setGLOptions(4, 3, 24, 8, sdl.Sdl.DOUBLE_BUFFER | sdl.Sdl.GL_CORE_PROFILE, 4);
 	//	sdl.Sdl.setGLAttribute(SDL_GL_MULTISAMPLEBUFFERS, 1);
 	//	sdl.Sdl.setGLAttribute(SDL_GL_MULTISAMPLESAMPLES, 4);
+	sdl.Sdl.setGLAttribute(SDL_GL_MULTISAMPLEBUFFERS, 1);
+	sdl.Sdl.setGLAttribute(SDL_GL_MULTISAMPLESAMPLES, 4);
 		new Main();
 	}
 
@@ -152,11 +156,27 @@ static inline var SDL_GL_MULTISAMPLESAMPLES = 14;
 		addLabel("currentColor = blue, unitSize = 1", 72, 292, 0xBFDBFE, 0.9);
 		addLabel("currentColor = pink, unitSize = 2", 392, 292, 0xFBCFE8, 0.9);
 
+		var mutedSvg = new SVG(MUTED_SOURCE, s2d);
+		mutedSvg.x = 72;
+		mutedSvg.y = 320;
+		mutedSvg.unitSize = 2;
+		//mutedSvg.renderMode = MeshRendering;
+
+		var unmutedSvg = new SVG(UNMUTED_SOURCE, s2d);
+		unmutedSvg.x = 144;
+		unmutedSvg.y = 320;
+		unmutedSvg.unitSize = 2;
+		//unmutedSvg.renderMode = MeshRendering;
+
+		addLabel("Muted / Unmuted icons", 72, 380, 0xD1D5DB, 0.9);
+
 		var boundsBox = new Graphics(s2d);
 		drawBoundsBox(boundsBox, leftSvg, 0x60A5FA);
 		drawBoundsBox(boundsBox, rightSvg, 0xF472B6);
+		drawBoundsBox(boundsBox, mutedSvg, 0x9CA3AF);
+		drawBoundsBox(boundsBox, unmutedSvg, 0x9CA3AF);
 
-		statusLabel = addLabel("", 40, 360, 0xD1D5DB, 0.95);
+		statusLabel = addLabel("", 40, 410, 0xD1D5DB, 0.95);
 		statusLabel.text = [
 			'Left bounds: ${fmt(leftSvg.contentWidth)} x ${fmt(leftSvg.contentHeight)}',
 			'Right bounds: ${fmt(rightSvg.contentWidth)} x ${fmt(rightSvg.contentHeight)}'
