@@ -1,7 +1,0 @@
--cp src
--cp ../../../
--cp tests/cgd/textbox/src
--lib format
--lib hlsdl
--main Main
--hl test.hl

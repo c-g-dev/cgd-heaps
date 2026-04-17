@@ -1,0 +1,7 @@
+-cp ./
+
+-js ./cgd/debug/dashboard/ui/bin/ui.js
+-dce no
+
+-main cgd.debug.dashboard.ui.Main
+

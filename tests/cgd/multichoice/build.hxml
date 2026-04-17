@@ -1,0 +1,7 @@
+-cp src
+-cp ../../../
+-cp tests/cgd/multichoice/src
+-lib format
+-lib hlsdl
+-main Main
+-hl tests/cgd/multichoice/test.hl

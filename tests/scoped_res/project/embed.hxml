@@ -1,0 +1,11 @@
+-cp src
+-cp pkgA/src
+-cp pkgB/src
+-cp ../../..
+-lib format
+-lib hlsdl
+--macro hxd.res.ScopedRes.install()
+-main Main
+-D test_embed
+
+-hl test.hl

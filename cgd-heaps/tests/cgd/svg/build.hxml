@@ -1,8 +1,0 @@
--cp src
--cp ../../../
--lib format
--lib hlsdl
--lib ludi-commons
--lib hscript
--main Main
--hl test.hl

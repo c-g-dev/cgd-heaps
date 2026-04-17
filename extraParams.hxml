@@ -1,0 +1,6 @@
+-lib format
+-lib hlsdl
+-lib ludi-commons
+-lib hscript
+--macro hxd.res.ScopedRes.install()
+-D cgdheaps

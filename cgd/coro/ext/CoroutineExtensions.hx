@@ -1,0 +1,28 @@
+package cgd.coro.ext;
+
+import cgd.coro.Coroutine;
+import cgd.coro.Future;
+import cgd.coro.CoroutineSystem;
+
+@:access(cgd.coro.CoroutineContext)
+@:access(cgd.coro.CoroutineSystem)
+@:access(cgd.coro.Future)
+class CoroutineExtensions {
+	public static function start(coroutine:Coroutine):Void {
+		if (coroutine.context().hasStarted)
+			return;
+		CoroutineSystem.MAIN.add(coroutine.context());
+	}
+
+	public static function pause(coroutine:Coroutine):Void {
+		coroutine.context().manuallyPaused = true;
+	}
+
+	public static function forceStop(coroutine:Coroutine):Void {
+		CoroutineSystem.MAIN.remove(coroutine.context());
+	}
+
+	public static function future(coroutine:Coroutine):Future {
+		return coroutine.context().future;
+	}
+}

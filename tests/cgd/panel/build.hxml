@@ -1,0 +1,7 @@
+-cp src
+-cp ../../../
+-cp tests/cgd/panel/src
+-lib format
+-lib hlsdl
+-main Main
+-hl tests/cgd/panel/test.hl

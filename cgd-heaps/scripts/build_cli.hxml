@@ -1,6 +1,0 @@
--cp src
--cp .
--main cgd.cli.CgdHeapsCli
--hl cgdheaps.hl
--lib format
--lib hscript
