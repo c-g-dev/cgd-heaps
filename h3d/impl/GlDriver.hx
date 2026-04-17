@@ -146,7 +146,7 @@ class GlDriver extends Driver {
 		#if (hlsdl >= version("1.15.0"))
 		if ( computeEnabled )
 			//no idea what this is supposed to do
-			//sdl.Sdl.setGLVersion(4, 3);
+			sdl.Sdl.setGLVersion(4, 3);
 		#end
 
 		#if js
