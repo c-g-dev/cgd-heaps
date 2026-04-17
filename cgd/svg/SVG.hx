@@ -14,6 +14,7 @@ enum SVGRenderMode {
 class SVG extends h2d.Object {
 	public var graphics(default, null):Null<Graphics>;
 	public var meshDrawable(default, null):Null<SVGMeshDrawable>;
+	public var bakedBitmap(default, null):Null<h2d.Bitmap>;
 	public var parser(default, null):SVGParser;
 	public var renderer(default, null):SVGGraphicsRenderer;
 	public var meshRenderer(default, null):SVGMeshRenderer;
@@ -96,6 +97,53 @@ class SVG extends h2d.Object {
 		}
 	}
 
+	public function bake():Void {
+		var bounds = this.getBounds(this);
+		var w = Math.ceil(bounds.width);
+		var h = Math.ceil(bounds.height);
+		if (w <= 0 || h <= 0) return;
+
+		var tex = new h3d.mat.Texture(w, h, [Target]);
+		tex.clear(0, 0);
+
+		var tempContainer = new h2d.Object();
+		tempContainer.x = -bounds.xMin;
+		tempContainer.y = -bounds.yMin;
+
+		var hasGraphics = graphics != null && graphics.visible;
+		var hasMesh = meshDrawable != null && meshDrawable.visible;
+
+		if (hasGraphics) tempContainer.addChild(graphics);
+		if (hasMesh) tempContainer.addChild(meshDrawable);
+
+		tempContainer.drawTo(tex);
+
+		if (hasGraphics) {
+			addChild(graphics);
+			graphics.visible = false;
+		}
+		if (hasMesh) {
+			addChild(meshDrawable);
+			meshDrawable.visible = false;
+		}
+
+		if (bakedBitmap != null) {
+			var t = bakedBitmap.tile;
+			if (t != null && t.getTexture() != null) {
+				t.getTexture().dispose();
+			}
+			bakedBitmap.remove();
+		}
+
+		var tile = h2d.Tile.fromTexture(tex);
+		tile.dx = bounds.xMin;
+		tile.dy = bounds.yMin;
+
+		bakedBitmap = new h2d.Bitmap(tile, this);
+
+		//this.source = null;
+	}
+
 	public function clear():Void {
 		svgSource = null;
 		document = null;
@@ -104,6 +152,14 @@ class SVG extends h2d.Object {
 			graphics.clear();
 		if (meshDrawable != null)
 			meshDrawable.clear();
+		if (bakedBitmap != null) {
+			var t = bakedBitmap.tile;
+			if (t != null && t.getTexture() != null) {
+				t.getTexture().dispose();
+			}
+			bakedBitmap.remove();
+			bakedBitmap = null;
+		}
 	}
 
 	override function onAdd() {
@@ -152,6 +208,14 @@ class SVG extends h2d.Object {
 	function set_source(value:Null<String>):Null<String> {
 		svgSource = value;
 		document = null;
+		if (value != null && bakedBitmap != null) {
+			var t = bakedBitmap.tile;
+			if (t != null && t.getTexture() != null) {
+				t.getTexture().dispose();
+			}
+			bakedBitmap.remove();
+			bakedBitmap = null;
+		}
 		redraw();
 		return value;
 	}
@@ -169,11 +233,15 @@ class SVG extends h2d.Object {
 	}
 
 	function get_contentWidth():Float {
-		return lastStats == null || lastStats.bounds == null ? 0 : lastStats.bounds.width;
+		if (lastStats != null && lastStats.bounds != null) return lastStats.bounds.width;
+		if (bakedBitmap != null && bakedBitmap.tile != null) return bakedBitmap.tile.width;
+		return 0;
 	}
 
 	function get_contentHeight():Float {
-		return lastStats == null || lastStats.bounds == null ? 0 : lastStats.bounds.height;
+		if (lastStats != null && lastStats.bounds != null) return lastStats.bounds.height;
+		if (bakedBitmap != null && bakedBitmap.tile != null) return bakedBitmap.tile.height;
+		return 0;
 	}
 
 	function ensureGraphics():Null<Graphics> {
