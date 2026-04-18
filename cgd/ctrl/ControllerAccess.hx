@@ -27,6 +27,7 @@ class ControllerAccess<TAccess:Int = Int, TBase:Int = Int> implements IControlle
     var holdTimeS:Map<TAccess, Float> = new Map();
     var autoFireFirstDone:Map<TAccess, Bool> = new Map();
     var autoFireNextS:Map<TAccess, Float> = new Map();
+    var consumedActions:Map<TAccess, Int> = new Map();
 
     @:allow(cgd.ctrl.Controller)
     @:allow(cgd.ctrl.Controls)
@@ -177,12 +178,17 @@ class ControllerAccess<TAccess:Int = Int, TBase:Int = Int> implements IControlle
         return false;
     }
 
-    public function isPressed(action:TAccess):Bool {
+    public function peekPressed(action:TAccess):Bool {
         if (!isActive()) {
             return false;
         }
 
-        var actionBindings = controller.bindings.get(mapAction(action));
+        if (consumedActions.get(action) == hxd.Timer.frameCount) {
+            return false;
+        }
+
+        var baseAction = mapAction(action);
+        var actionBindings = controller.bindings.get(baseAction);
         if (actionBindings == null) {
             return false;
         }
@@ -196,12 +202,25 @@ class ControllerAccess<TAccess:Int = Int, TBase:Int = Int> implements IControlle
         return false;
     }
 
-    public function isReleased(action:TAccess):Bool {
+    public function consumePressed(action:TAccess):Bool {
+        if (peekPressed(action)) {
+            consumedActions.set(action, hxd.Timer.frameCount);
+            return true;
+        }
+        return false;
+    }
+
+    public function peekReleased(action:TAccess):Bool {
         if (!isActive()) {
             return false;
         }
 
-        var actionBindings = controller.bindings.get(mapAction(action));
+        if (consumedActions.get(action) == hxd.Timer.frameCount) {
+            return false;
+        }
+
+        var baseAction = mapAction(action);
+        var actionBindings = controller.bindings.get(baseAction);
         if (actionBindings == null) {
             return false;
         }
@@ -212,6 +231,14 @@ class ControllerAccess<TAccess:Int = Int, TBase:Int = Int> implements IControlle
             }
         }
 
+        return false;
+    }
+
+    public function consumeReleased(action:TAccess):Bool {
+        if (peekReleased(action)) {
+            consumedActions.set(action, hxd.Timer.frameCount);
+            return true;
+        }
         return false;
     }
 
@@ -282,7 +309,29 @@ class ControllerAccess<TAccess:Int = Int, TBase:Int = Int> implements IControlle
         return getRawHoldTimeS(action);
     }
 
-    public inline function isPressedAutoFire(action:TAccess, firstDelayS:Float = 0.28, repeatDelayS:Float = 0.07):Bool {
+    public inline function peekPressedAutoFire(action:TAccess, firstDelayS:Float = 0.28, repeatDelayS:Float = 0.07):Bool {
+        if (consumedActions.get(action) == hxd.Timer.frameCount) {
+            return false;
+        }
+
+        if (!isDown(action)) {
+            return false;
+        }
+
+        var now = haxe.Timer.stamp();
+        var next = autoFireNextS.get(action);
+        if (next == null || now >= next) {
+            return true;
+        }
+
+        return false;
+    }
+
+    public inline function consumePressedAutoFire(action:TAccess, firstDelayS:Float = 0.28, repeatDelayS:Float = 0.07):Bool {
+        if (consumedActions.get(action) == hxd.Timer.frameCount) {
+            return false;
+        }
+
         if (!isDown(action)) {
             autoFireNextS.set(action, 0.0);
             autoFireFirstDone.remove(action);
@@ -295,6 +344,7 @@ class ControllerAccess<TAccess:Int = Int, TBase:Int = Int> implements IControlle
             var delay = autoFireFirstDone.exists(action) ? repeatDelayS : firstDelayS;
             autoFireNextS.set(action, now + delay);
             autoFireFirstDone.set(action, true);
+            consumedActions.set(action, hxd.Timer.frameCount);
             return true;
         }
 
