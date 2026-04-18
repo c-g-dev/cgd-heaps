@@ -96,6 +96,11 @@ class Object #if (domkit && !domkit_heaps) implements domkit.Model<h2d.Object> #
 	public var visible(default, set) : Bool = true;
 
 	/**
+		Controls the default value for `h2d.Drawable.smooth` for all children of this Object.
+	**/
+	public var defaultSmooth(default, set) : Null<Bool>;
+
+	/**
 		The amount of transparency of the Object.
 	**/
 	public var alpha : Float = 1.;
@@ -441,6 +446,37 @@ class Object #if (domkit && !domkit_heaps) implements domkit.Model<h2d.Object> #
 		return b;
 	}
 
+	function set_defaultSmooth(v:Null<Bool>) {
+		this.defaultSmooth = v;
+		updateHierarchySmooth();
+		return v;
+	}
+
+	@:allow(h2d.Object)
+	function updateHierarchySmooth(?parentSmooth:Null<Bool>) {
+		if (parentSmooth == null) {
+			var p = this.parent;
+			while (p != null) {
+				if (p.defaultSmooth != null) {
+					parentSmooth = p.defaultSmooth;
+					break;
+				}
+				p = p.parent;
+			}
+		}
+
+		applyHierarchySmooth(parentSmooth);
+
+		var childSmooth = this.defaultSmooth != null ? this.defaultSmooth : parentSmooth;
+		for (c in children) {
+			c.updateHierarchySmooth(childSmooth);
+		}
+	}
+
+	@:dox(hide)
+	function applyHierarchySmooth(parentSmooth:Null<Bool>) {
+	}
+
 	/**
 		Add a child object at the end of the children list.
 	**/
@@ -472,6 +508,9 @@ class Object #if (domkit && !domkit_heaps) implements domkit.Model<h2d.Object> #
 		s.parent = this;
 		s.parentContainer = parentContainer;
 		s.posChanged = true;
+		
+		s.updateHierarchySmooth();
+		
 		// ensure that proper alloc/delete is done if we change parent
 		if( allocated ) {
 			if( !s.allocated )
@@ -567,6 +606,9 @@ class Object #if (domkit && !domkit_heaps) implements domkit.Model<h2d.Object> #
 		if( children.remove(s) ) {
 			if( s.allocated ) s.onRemove();
 			s.parent = null;
+			
+			s.updateHierarchySmooth();
+			
 			if( s.parentContainer != null ) s.setParentContainer(null);
 			s.posChanged = true;
 			#if domkit

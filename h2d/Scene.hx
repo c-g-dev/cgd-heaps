@@ -211,11 +211,6 @@ class Scene extends Layers implements h3d.IDrawable implements hxd.SceneEvents.I
 	public var interactiveCamera(default, set) : Camera;
 
 	/**
-		Controls the default value for `h2d.Drawable.smooth`. Default: `false`
-	**/
-	public var defaultSmooth(get, set) : Bool;
-
-	/**
 		The current Scene renderer. Can be customized.
 	**/
 	public var renderer(get, set) : RenderContext;
@@ -255,8 +250,11 @@ class Scene extends Layers implements h3d.IDrawable implements hxd.SceneEvents.I
 		posChanged = true;
 	}
 
-	inline function get_defaultSmooth() return ctx.defaultSmooth;
-	inline function set_defaultSmooth(v) return ctx.defaultSmooth = v;
+	override function get_defaultSmooth():Null<Bool> return ctx.defaultSmooth;
+	override function set_defaultSmooth(v:Null<Bool>):Null<Bool> {
+		ctx.defaultSmooth = v == true;
+		return super.set_defaultSmooth(v);
+	}
 
 	@:dox(hide) @:noCompletion
 	public function setEvents(events : hxd.SceneEvents) {

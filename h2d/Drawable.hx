@@ -17,7 +17,40 @@ class Drawable extends Object {
 
 		By default smooth is `null` in which case `Scene.defaultSmooth` value is used.
 	**/
-	public var smooth : Null<Bool>;
+	public var smooth(default, set) : Null<Bool>;
+
+	@:noCompletion
+	public var _hierarchySmooth : Bool = false;
+	var _internalSet : Bool = false;
+
+	function set_smooth(v:Null<Bool>) {
+		if (_internalSet) {
+			return this.smooth = v;
+		}
+		_hierarchySmooth = false;
+		this.smooth = v;
+		if (v == null && parent != null) {
+			@:privateAccess updateHierarchySmooth();
+		}
+		return v;
+	}
+
+	@:dox(hide)
+	override function applyHierarchySmooth(parentSmooth:Null<Bool>) {
+		if (_hierarchySmooth || smooth == null) {
+			if (parentSmooth != null) {
+				_internalSet = true;
+				this.smooth = parentSmooth;
+				_internalSet = false;
+				_hierarchySmooth = true;
+			} else if (_hierarchySmooth) {
+				_internalSet = true;
+				this.smooth = null;
+				_internalSet = false;
+				_hierarchySmooth = false;
+			}
+		}
+	}
 
 	/**
 		Enables texture uv wrap for this Drawable, causing tiles with uv exceeding the texture size to repeat instead of clamping on edges.
