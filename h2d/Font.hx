@@ -149,6 +149,33 @@ enum FontType {
 	Heaps comes with a default Font that covers basic ASCII characters, and can be retrieved via `hxd.res.DefaultFont.get()`.
 **/
 class Font {
+	public static var DEFAULT_SIZE : Null<Int> = 32;
+
+	/**
+		Automatically scales the font to `DEFAULT_SIZE` based on its line height,
+		if `DEFAULT_SIZE` is configured.
+	**/
+	public function applyDefaultSize() {
+		if ( DEFAULT_SIZE == null || lineHeight == 0 ) return;
+		var ratio = DEFAULT_SIZE / lineHeight;
+		if ( ratio == 1 ) return;
+		for( c in glyphs ) {
+			c.width *= ratio;
+			c.t.scaleToSize(c.t.width * ratio, c.t.height * ratio);
+			c.t.dx *= ratio;
+			c.t.dy *= ratio;
+			var k = @:privateAccess c.kerning;
+			while ( k != null ) {
+				k.offset *= ratio;
+				k = k.next;
+			}
+		}
+		lineHeight = Math.round(lineHeight * ratio);
+		baseLine = Math.ceil(baseLine * ratio);
+		this.size = Math.round(this.size * ratio);
+		this.initSize = this.size;
+	}
+
 	/**
 		The font name. Assigned on font creation and can be used to identify font instances.
 	**/

@@ -383,6 +383,8 @@ class BDFFont extends Resource {
 			fallback = font.glyphs.get( " ".code );
 		font.defaultChar = fallback;
 
+		font.applyDefaultSize();
+
 		// Cleanup
 		bitmapData.dispose();
 		this.glyphData = null; // No longer required

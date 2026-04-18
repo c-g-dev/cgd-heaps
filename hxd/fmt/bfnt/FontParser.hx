@@ -274,6 +274,8 @@ class FontParser {
 		if( fallback != null )
 			font.defaultChar = fallback;
 
+		font.applyDefaultSize();
+
 		return font;
 	}
 

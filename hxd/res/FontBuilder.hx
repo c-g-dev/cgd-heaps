@@ -120,6 +120,9 @@ class FontBuilder {
 		} else {
 			innerTex.uploadBitmap(rbmp);
 		}
+
+		font.applyDefaultSize();
+
 		return font;
 	}
 
