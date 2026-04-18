@@ -240,7 +240,7 @@ class SuperTextTypewriter {
 
     function revealOneCharacter():Bool {
         if( progress >= totalVisibleChars ) {
-            state = ParagraphBreak;
+            state = NoMoreParagraphs;
             return false;
         }
 
@@ -277,8 +277,12 @@ class SuperTextTypewriter {
 
         if( reachedParagraphBoundary() ) {
             wordWrapLookaheadEnd = -1;
-            state = ParagraphBreak;
             paragraphCursor++;
+            if( paragraphCursor >= paragraphEnds.length ) {
+                state = NoMoreParagraphs;
+            } else {
+                state = ParagraphBreak;
+            }
             return false;
         }
         return true;
