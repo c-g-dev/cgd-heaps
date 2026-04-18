@@ -118,8 +118,7 @@ class BasicOpenCloseEffect extends Behavior {
     }
 
     function getWindowHeight():Float {
-        var bounds = textBox.getBounds(textBox);
-        return bounds.height;
+        return textBox.getPanel().height;
     }
 
     function updateBaseScaleYFromCurrentState():Void {

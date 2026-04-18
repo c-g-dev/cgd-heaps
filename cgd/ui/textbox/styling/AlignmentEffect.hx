@@ -12,15 +12,15 @@ class AlignmentEffect {
     public static function align(textbox:Textbox, mode:AlignmentEffectMode):Void {
         if( textbox == null ) throw "AlignmentEffect.align requires a non-null textbox.";
 
-        var bounds = textbox.getBounds();
+        var panel = textbox.getPanel();
         var window = hxd.Window.getInstance();
-        textbox.x = ((window.width - bounds.width) * 0.5) - bounds.xMin;
+        textbox.x = 0;
 
         switch( mode ) {
         case Bottom:
-            textbox.y = (window.height - bounds.height);
+            textbox.y = (window.height - panel.height);
         case Center:
-            textbox.y = ((window.height - bounds.height) * 0.5) - bounds.yMin;
+            textbox.y = ((window.height - panel.height) * 0.5);
         }
     }
 
