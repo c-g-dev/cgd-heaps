@@ -250,7 +250,7 @@ class Scene extends Layers implements h3d.IDrawable implements hxd.SceneEvents.I
 		posChanged = true;
 	}
 
-	override function get_defaultSmooth():Null<Bool> return ctx.defaultSmooth;
+	function get_defaultSmooth():Null<Bool> return ctx.defaultSmooth;
 	override function set_defaultSmooth(v:Null<Bool>):Null<Bool> {
 		ctx.defaultSmooth = v == true;
 		return super.set_defaultSmooth(v);
