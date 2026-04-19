@@ -432,6 +432,7 @@ class SuperTextTypewriter {
         switch( node.nodeType ) {
         case Document, Element:
             var total = 0;
+            if( node.nodeType == Xml.Element && node.nodeName.toLowerCase() == "br" ) total += 1;
             for( child in node )
                 total += visibleLengthForNode(child);
             return total;
@@ -550,6 +551,7 @@ class SuperTextTypewriter {
     function collectVisibleText(node:Xml, buf:StringBuf):Void {
         switch( node.nodeType ) {
         case Document, Element:
+            if( node.nodeType == Xml.Element && node.nodeName.toLowerCase() == "br" ) buf.add("\n");
             for( child in node )
                 collectVisibleText(child, buf);
         case PCData, CData:

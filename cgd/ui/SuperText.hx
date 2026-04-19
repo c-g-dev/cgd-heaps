@@ -307,6 +307,38 @@ class SuperText extends HtmlText {
 		return { width: width, height: height, baseLine: baseLine, baseLineOffset: offset };
 	}
 
+	override function getTextProgress(text:String, progress:Float):String {
+		var doc = @:privateAccess parseText(text);
+		function progressRec(e:Xml) {
+			if( progress <= 0 ) {
+				if( e.parent != null ) e.parent.removeChild(e);
+				return;
+			}
+			if( e.nodeType == Xml.Element ) {
+				if( e.nodeName.toLowerCase() == "br" ) {
+					progress -= 1;
+					if( progress < 0 ) {
+						if( e.parent != null ) e.parent.removeChild(e);
+						return;
+					}
+				}
+				for( x in [for( x in e ) x] )
+					progressRec(x);
+			} else if( e.nodeType == Xml.PCData || e.nodeType == Xml.CData ) {
+				var textVal = @:privateAccess htmlToText(e.nodeValue);
+				var len = textVal.length;
+				if( len > progress ) {
+					textVal = textVal.substr(0, Std.int(progress));
+					e.nodeValue = textVal;
+				}
+				progress -= len;
+			}
+		}
+		for( x in [for( x in doc ) x] )
+			progressRec(x);
+		return doc.toString();
+	}
+
 	function addSuperNode(e:Xml, font:Font, align:Align, rebuild:Bool, metrics:Array<SuperTextLineInfo>) {
 		function createInteractive() {
 			@:privateAccess if( aHrefs == null || aHrefs.length == 0 ) return;
@@ -432,6 +464,7 @@ class SuperText extends HtmlText {
 			case "i", "italic":
 				if( tag?.font == null ) setFont("italic");
 			case "br":
+				renderCharCount++;
 				makeLineBreak();
 				@:privateAccess newLine = true;
 				@:privateAccess prevChar = -1;
