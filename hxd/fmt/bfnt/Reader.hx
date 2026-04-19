@@ -43,8 +43,6 @@ class Reader {
 				throw "Unknown BFNT version: " + ver;
 		}
 
-		font.applyDefaultSize();
-
 		return font;
 	}
 

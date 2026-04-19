@@ -149,26 +149,7 @@ enum FontType {
 	Heaps comes with a default Font that covers basic ASCII characters, and can be retrieved via `hxd.res.DefaultFont.get()`.
 **/
 class Font {
-	public static var DEFAULT_SIZE : Null<Int> = 32;
-
-	var originalInitSize : Null<Int> = null;
-
-	/**
-		Automatically scales the font to `DEFAULT_SIZE` based on its line height,
-		if `DEFAULT_SIZE` is configured.
-	**/
-	public function applyDefaultSize() {
-		if ( DEFAULT_SIZE == null || lineHeight == 0 || turnOffDefaultSizing || originalInitSize != null ) return;
-		var ratio = DEFAULT_SIZE / lineHeight;
-		if ( ratio == 1 ) {
-			originalInitSize = this.initSize;
-			return;
-		}
-		originalInitSize = this.initSize;
-		var targetSize = Math.round(this.size * ratio);
-		resizeTo(targetSize);
-		this.initSize = targetSize;
-	}
+	public static var DEFAULT_SIZE : Int = 32;
 
 	/**
 		The font name. Assigned on font creation and can be used to identify font instances.
@@ -207,29 +188,6 @@ class Font {
 		The resource path of the source Tile. Either relative to .fnt or to resources root.
 	**/
 	public var tilePath(default,null) : String;
-	/**
-		If true, the font won't be scaled by `DEFAULT_SIZE` when `applyDefaultSize` is called.
-	**/
-	@:isVar public var turnOffDefaultSizing(default, set) : Bool = false;
-
-	function set_turnOffDefaultSizing(v:Bool) {
-		if ( this.turnOffDefaultSizing == v ) return v;
-		this.turnOffDefaultSizing = v;
-		if ( v ) {
-			if ( originalInitSize != null ) {
-				var revertSize = originalInitSize;
-				originalInitSize = null;
-				resizeTo(revertSize);
-				this.initSize = revertSize;
-			}
-		} else {
-			if ( originalInitSize == null ) {
-				applyDefaultSize();
-			}
-		}
-		return v;
-	}
-
 	/**
 		The font type. BitmapFonts rendered as-is, but SDF fonts will use an extra shader to produce scalable smooth fonts.
 		See `FontType.SignedDistanceField` for more details.
@@ -350,8 +308,6 @@ class Font {
 		f.tile = tile.clone();
 		f.charset = charset;
 		f.defaultChar = defaultChar.clone();
-		f.turnOffDefaultSizing = turnOffDefaultSizing;
-		f.originalInitSize = originalInitSize;
 		f.type = type;
 		f.offsetX = offsetX;
 		f.offsetY = offsetY;
@@ -391,6 +347,13 @@ class Font {
 		lineHeight = Math.ceil(lineHeight * ratio);
 		baseLine = Math.ceil(baseLine * ratio);
 		this.size = normalized;
+	}
+
+	/**
+		Resizes the Font instance to the default size.
+	**/
+	public function toDefaultSize() {
+		resizeTo(DEFAULT_SIZE);
 	}
 
 	/**
