@@ -100,7 +100,8 @@ class Textbox extends h2d.Object {
             style.maxLines,
             style.paragraphBreakMode,
             textboxController,
-            style.deallocateLinesEffect
+            style.deallocateLinesEffect,
+            style.charFadeDuration
         );
 
         var future = typewriter.start();

@@ -18,6 +18,7 @@ class TextboxStyle {
     public var maxLines:Int;
     public var paragraphBreakMode:SuperTextTypewriterParagraphBreak;
     public var deallocateLinesEffect:SuperTextTypewriterDeallocateLinesEffect;
+    public var charFadeDuration:Float;
     public var pluginFactories:Array<Textbox -> TextboxPlugin>;
     public var onInitCallbacks:Array<Textbox -> Void>;
     public var panelStyle:Null<PanelStyle>;
@@ -33,6 +34,7 @@ class TextboxStyle {
         maxLines = -1;
         paragraphBreakMode = WaitForAdvance;
         deallocateLinesEffect = Clear;
+        charFadeDuration = 0.;
         pluginFactories = [];
         onInitCallbacks = [];
         panelStyle = null;

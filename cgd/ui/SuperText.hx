@@ -78,7 +78,8 @@ class SuperText extends HtmlText {
 		?maxLines = -1,
 		?paragraphBreakMode:SuperTextTypewriterParagraphBreak = WaitForAdvance,
 		?controller:SuperTextTypewriterOnFrameState -> SuperTextTypewriterRequest,
-		?deallocateLinesEffect:SuperTextTypewriterDeallocateLinesEffect = Clear
+		?deallocateLinesEffect:SuperTextTypewriterDeallocateLinesEffect = Clear,
+		?charFadeDuration = 0.
 	) : SuperTextTypewriter {
 		return new SuperTextTypewriter(
 			this,
@@ -86,7 +87,8 @@ class SuperText extends HtmlText {
 			maxLines,
 			paragraphBreakMode,
 			controller,
-			deallocateLinesEffect
+			deallocateLinesEffect,
+			charFadeDuration
 		);
 	}
 
@@ -279,6 +281,27 @@ class SuperText extends HtmlText {
 	}
 	#end
 
+
+	function usesCharFade():Bool {
+		for( typewriter in activeTypewriters ) {
+			if( typewriter.__usesCharFade() ) return true;
+		}
+		return false;
+	}
+
+	inline function resolveCharFadeAlpha(globalCharIndex:Int):Float {
+		var alpha = 1.;
+		for( typewriter in activeTypewriters ) {
+			var fade = typewriter.__getCharFadeAlpha(globalCharIndex);
+			if( fade < alpha ) alpha = fade;
+		}
+		return alpha;
+	}
+
+	inline function getCharFadePageStart():Int {
+		if( activeTypewriters.length == 0 ) return 0;
+		return activeTypewriters[activeTypewriters.length - 1].__getPageStart();
+	}
 
 	function __registerTypewriter(typewriter:SuperTextTypewriter) : Void {
 		if( typewriter == null ) return;
@@ -547,7 +570,13 @@ class SuperText extends HtmlText {
 					@:privateAccess xPos += fc.getKerningOffset(prevChar);
 					if( rebuild && isVisible ) {
 						if( currentEffect == null ) {
-							@:privateAccess glyphs.add(xPos, yPos + dy, fc.t);
+							var fadeAlpha = usesCharFade() ? resolveCharFadeAlpha(getCharFadePageStart() + renderCharCount - 1) : 1.;
+							if( fadeAlpha < 1. ) {
+								var color = @:privateAccess glyphs.curColor;
+								@:privateAccess glyphs.addAlpha(xPos, yPos + dy, color.a * fadeAlpha, fc.t);
+							} else {
+								@:privateAccess glyphs.add(xPos, yPos + dy, fc.t);
+							}
 						} else {
 							var glyph = new Bitmap(fc.t, this);
 							@:privateAccess glyph.x = xPos;

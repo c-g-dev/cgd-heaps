@@ -38,6 +38,7 @@ class SuperTextTypewriter {
     var paragraphBreakMode: SuperTextTypewriterParagraphBreak;
     var controller: SuperTextTypewriterOnFrameState -> SuperTextTypewriterRequest; //called every frame. SuperTextTypewriterOnFrameState is reported by the typewriter. SuperTextTypewriterRequest is the response from the calling code.
     var deallocateLinesEffect: SuperTextTypewriterDeallocateLinesEffect;
+    var charFadeDuration:Float;
 
     var state:SuperTextTypewriterOnFrameState = Writing;
     var started:Bool = false;
@@ -68,6 +69,9 @@ class SuperTextTypewriter {
     var deallocateChars:Int = 0;
     var wordWrapLookaheadEnd:Int = -1;
     var charSpeedMap:Array<Float> = [];
+    var charRevealTimes:Array<Float> = [];
+    var fadeElapsed:Float = 0.;
+    var charFadeWasAnimating:Bool = false;
 
     public function new(
         target:SuperText,
@@ -75,7 +79,8 @@ class SuperTextTypewriter {
         ?maxLines = -1,
         ?paragraphBreakMode = WaitForAdvance,
         ?controller:SuperTextTypewriterOnFrameState -> SuperTextTypewriterRequest,
-        ?deallocateLinesEffect:SuperTextTypewriterDeallocateLinesEffect = Clear
+        ?deallocateLinesEffect:SuperTextTypewriterDeallocateLinesEffect = Clear,
+        ?charFadeDuration = 0.
     ) {
         if( target == null ) throw "SuperTextTypewriter requires a non-null SuperText target.";
         if( speed <= 0 ) throw "SuperTextTypewriter speed must be > 0.";
@@ -86,6 +91,7 @@ class SuperTextTypewriter {
         this.paragraphBreakMode = paragraphBreakMode == null ? WaitForAdvance : paragraphBreakMode;
         this.controller = controller == null ? defaultController : controller;
         this.deallocateLinesEffect = deallocateLinesEffect == null ? Clear : deallocateLinesEffect;
+        this.charFadeDuration = charFadeDuration == null || charFadeDuration < 0 ? 0. : charFadeDuration;
     }
 
     function defaultController(current:SuperTextTypewriterOnFrameState):SuperTextTypewriterRequest {
@@ -118,6 +124,9 @@ class SuperTextTypewriter {
         totalVisibleChars = visibleLengthForHtml(sourceHtml);
         sourceVisibleText = extractVisibleText(sourceHtml);
         charSpeedMap = buildCharSpeedMap(sourceHtml);
+        charRevealTimes = [];
+        fadeElapsed = 0.;
+        charFadeWasAnimating = false;
         pageHtml = sourceHtml;
         wordWrapLookaheadEnd = -1;
         renderedHtml = "<p></p>";
@@ -181,6 +190,7 @@ class SuperTextTypewriter {
         if( !started || done ) return;
         if( dt <= 0 ) return;
 
+        fadeElapsed += dt;
         updateDeallocation(dt);
 
         var request = controller(currentState());
@@ -188,7 +198,10 @@ class SuperTextTypewriter {
 
         if( done ) return;
         if( state == DeallocatingLines ) return;
-        if( paused ) return;
+        if( paused ) {
+            refreshCharFadeIfNeeded();
+            return;
+        }
 
         switch( state ) {
         case Writing:
@@ -198,6 +211,8 @@ class SuperTextTypewriter {
         case AllLinesAllocated, NoMoreParagraphs:
         case DeallocatingLines:
         }
+
+        refreshCharFadeIfNeeded();
     }
 
     function applyRequest(request:SuperTextTypewriterRequest):Void {
@@ -218,7 +233,10 @@ class SuperTextTypewriter {
         case AutoFill:
             if( state == Writing && !paused ) autoFill();
         case Finish:
-            if( state == NoMoreParagraphs ) complete();
+            if( state == NoMoreParagraphs ) {
+                if( charFadeDuration > 0 && hasActiveCharFades() ) return;
+                complete();
+            }
         }
     }
 
@@ -259,6 +277,8 @@ class SuperTextTypewriter {
         }
 
         var nextProgress = progress + 1;
+        if( charFadeDuration > 0 )
+            ensureCharRevealTime(progress);
         renderProgress(nextProgress);
 
         if( maxLines > -1 && currentLineCount() > maxLines ) {
@@ -602,6 +622,12 @@ class SuperTextTypewriter {
         var paragraphStart = paragraphCursor == 0 ? 0 : paragraphEnds[paragraphCursor - 1];
         if( paragraphStart > lowerBound ) lowerBound = paragraphStart;
         if( pos <= lowerBound ) return pos;
+        
+        if( pos < sourceVisibleText.length ) {
+            var ch = StringTools.fastCodeAt(sourceVisibleText, pos);
+            if( ch == ' '.code || ch == '\n'.code || ch == '\t'.code ) return pos;
+        }
+
         var i = pos - 1;
         if( i >= 0 && i < sourceVisibleText.length ) {
             var ch = StringTools.fastCodeAt(sourceVisibleText, i);
@@ -631,6 +657,59 @@ class SuperTextTypewriter {
         var speedStack:Array<Float> = [];
         buildCharSpeedMapFromNode(doc, map, speedStack);
         return map;
+    }
+
+    function ensureCharRevealTime(charIndex:Int):Void {
+        while( charRevealTimes.length <= charIndex )
+            charRevealTimes.push(-1.);
+        if( charRevealTimes[charIndex] < 0 )
+            charRevealTimes[charIndex] = fadeElapsed;
+    }
+
+    function hasActiveCharFades():Bool {
+        if( charFadeDuration <= 0 ) return false;
+        var end = progress;
+        if( end > charRevealTimes.length ) end = charRevealTimes.length;
+        for( i in 0...end ) {
+            if( charRevealTimes[i] < 0 ) continue;
+            if( getCharFadeAlpha(i) < 1. ) return true;
+        }
+        return false;
+    }
+
+    function refreshCharFadeIfNeeded():Void {
+        if( charFadeDuration <= 0 ) return;
+        var active = hasActiveCharFades();
+        if( !active && !charFadeWasAnimating ) return;
+        charFadeWasAnimating = active;
+        @:privateAccess target.needsRebuild = true;
+        @:privateAccess target.flushTextLayout();
+    }
+
+    function getCharFadeAlpha(charIndex:Int):Float {
+        if( charFadeDuration <= 0 ) return 1.;
+        if( charIndex < 0 || charIndex >= charRevealTimes.length ) return 1.;
+        var revealTime = charRevealTimes[charIndex];
+        if( revealTime < 0 ) return 1.;
+        var elapsed = fadeElapsed - revealTime;
+        if( elapsed <= 0 ) return 0.;
+        var alpha = elapsed / charFadeDuration;
+        return alpha > 1. ? 1. : alpha;
+    }
+
+    @:allow(cgd.ui.SuperText)
+    function __usesCharFade():Bool {
+        return charFadeDuration > 0;
+    }
+
+    @:allow(cgd.ui.SuperText)
+    function __getCharFadeAlpha(charIndex:Int):Float {
+        return getCharFadeAlpha(charIndex);
+    }
+
+    @:allow(cgd.ui.SuperText)
+    function __getPageStart():Int {
+        return pageStart;
     }
 
     function buildCharSpeedMapFromNode(node:Xml, map:Array<Float>, speedStack:Array<Float>):Void {

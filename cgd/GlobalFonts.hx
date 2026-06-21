@@ -14,6 +14,8 @@ enum abstract GlobalFonts(String) to String from String {
     public static inline var MPLUS2_Regular:GlobalFonts = "MPLUS2_Regular";
     public static inline var MPLUS2_SemiBold:GlobalFonts = "MPLUS2_SemiBold";
     public static inline var MPLUS2_Thin:GlobalFonts = "MPLUS2_Thin";
+    public static inline var PlayfairDisplay_Bold:GlobalFonts = "PlayfairDisplay_Bold";
+    public static inline var PlayfairDisplay_Regular:GlobalFonts = "PlayfairDisplay_Regular";
     public static inline var VL_Gothic_Regular:GlobalFonts = "VL_Gothic_Regular";
     //autogenerate from /res/fonts (end)
 
@@ -30,11 +32,14 @@ enum abstract GlobalFonts(String) to String from String {
             case MPLUS2_Regular: return hxd.Res.fonts.mplus2.MPLUS2_Regular.toFont();
             case MPLUS2_SemiBold: return hxd.Res.fonts.mplus2.MPLUS2_SemiBold.toFont();
             case MPLUS2_Thin: return hxd.Res.fonts.mplus2.MPLUS2_Thin.toFont();
+            case PlayfairDisplay_Bold: return hxd.Res.fonts.playfairdisplay.PlayfairDisplay_Bold.toFont();
+            case PlayfairDisplay_Regular: return hxd.Res.fonts.playfairdisplay.PlayfairDisplay_Regular.toFont();
             case VL_Gothic_Regular: return hxd.Res.fonts.vlgothic.VL_Gothic_Regular.toFont();
             //autogenerate mapping to hxd.Res font item (end)
         }
         return hxd.res.DefaultFont.get();
     }
+
     public static function all(): Array<GlobalFonts> {
         return [
             //autogenerate all GlobalFonts values (start)
@@ -48,6 +53,8 @@ enum abstract GlobalFonts(String) to String from String {
             MPLUS2_Regular,
             MPLUS2_SemiBold,
             MPLUS2_Thin,
+            PlayfairDisplay_Bold,
+            PlayfairDisplay_Regular,
             VL_Gothic_Regular
             //autogenerate all GlobalFonts values (end)
         ];
