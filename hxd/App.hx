@@ -177,6 +177,7 @@ class App implements h3d.IDrawable {
 			mcpServerStarted = true;
 			Coro.start((ctx) -> {
 				DequeuedDispatcher.update();
+				cgd.debug.DisplayConfigurationDebug.update();
 				return WaitNextFrame;
 			});
 			#end

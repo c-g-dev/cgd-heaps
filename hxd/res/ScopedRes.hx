@@ -126,7 +126,12 @@ class ScopedRes {
 			return path;
 		if( haxe.io.Path.isAbsolute(path) )
 			return normalizePath(path);
-		return normalizePath(sys.FileSystem.fullPath(path));
+		try {
+			return normalizePath(sys.FileSystem.fullPath(path));
+		} catch( _ : Dynamic ) {
+			// Classpath entries may be relative to cwd without existing yet on disk.
+			return normalizePath(haxe.io.Path.join([Sys.getCwd(), path]));
+		}
 	}
 
 	static function parentDir( path : String ) {
