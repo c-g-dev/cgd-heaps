@@ -34,9 +34,16 @@ class Highlighter extends h2d.Object {
 
 	static function ensureInstalled(): Void {
 		if (instance != null) return;
-		var app = HeapsDebugServer.getApp();
+		var app = resolveApp();
 		instance = new Highlighter();
 		app.s2d.addChild(instance);
+	}
+
+	static function resolveApp(): hxd.App {
+		var app = HeapsDebugServer.getApp();
+		if (app != null)
+			return app;
+		return cgd.debug.HeapsProtocolServer.getApp();
 	}
 
 	override function sync(ctx: h2d.RenderContext) {
@@ -47,8 +54,7 @@ class Highlighter extends h2d.Object {
 
 	function redraw(): Void {
 		if (target == null) return;
-		var app = HeapsDebugServer.getApp();
-		
+
 		if(target == this.getScene()) {
 			bounds = Bounds.fromValues(0, 0, (cast target:h2d.Scene).width, (cast target:h2d.Scene).height);
 		} else {

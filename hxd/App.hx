@@ -2,7 +2,7 @@ package hxd;
 
 import cgd.coro.Coro;
 import cgd.debug.DequeuedDispatcher;
-import cgd.debug.dashboard.HeapsDebugServer;
+import cgd.debug.HeapsProtocolServer;
 
 /**
 	Base class for a Heaps application.
@@ -169,25 +169,31 @@ class App implements h3d.IDrawable {
 			engine.driver.present();
 			hxd.Key.initialize();
 			
-			var mcpServerStarted = false;
+			var protocolStarted = false;
 			#if cgd_debug
-			trace("cgd_debug = true. Attaching HeapsDebugServer and DequeuedDispatcher.");
-			HeapsDebugServer.attach(this, 8083);
-			new cgd.debug.AgentServer(this);
-			mcpServerStarted = true;
+			trace("cgd_debug = true. Attaching HeapsProtocolServer (dashboard + agent) and DequeuedDispatcher.");
+			HeapsProtocolServer.attach(this, {
+				agentPort: 8080,
+				hostDashboard: true,
+				dashboardPort: 8083
+			});
+			protocolStarted = true;
 			Coro.start((ctx) -> {
 				DequeuedDispatcher.update();
 				cgd.debug.DisplayConfigurationDebug.update();
 				return WaitNextFrame;
 			});
 			#end
-            
-            #if hl
-            if (!mcpServerStarted) {
-                trace("Starting AgentServer because HL runtime is active");
-                new cgd.debug.AgentServer(this);
-            }
-            #end
+
+			#if hl
+			if (!protocolStarted) {
+				trace("Starting HeapsProtocolServer (agent transport) because HL runtime is active");
+				HeapsProtocolServer.attach(this, {
+					agentPort: 8080,
+					hostDashboard: false
+				});
+			}
+			#end
 		});
 	}
 
